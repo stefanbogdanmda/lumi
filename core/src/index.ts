@@ -5,3 +5,4 @@ export { InMemoryProfile, JsonFileProfile } from "./profile";
 export { InMemoryCache, JsonFileCache } from "./cache";
 export { MockGenerator, ClaudeCliGenerator, buildLessonPrompt, parseLessonJson } from "./generator";
 export { Lumi, LumiOptions } from "./lumi";
+export { extractLatestAssistantText } from "./transcript";

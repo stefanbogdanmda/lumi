@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { extractLatestAssistantText } from "@lumi/core";
 
 /** Watches the Lumi feed file and emits each new line of Claude output text. */
 export class HookBridge {
@@ -36,17 +37,10 @@ export class HookBridge {
       this.pos += Buffer.byteLength(text.slice(0, lastNl + 1), "utf8");
       for (const line of text.slice(0, lastNl).split("\n")) {
         if (!line.trim()) continue;
-        this.onText(this.extractText(line));
+        const extracted = extractLatestAssistantText(line);
+        if (extracted) this.onText(extracted);
       }
     } finally { fs.closeSync(fd); }
-  }
-
-  /** Pull readable text out of a hook JSON line; fall back to the raw line. */
-  private extractText(line: string): string {
-    try {
-      const obj = JSON.parse(line);
-      return obj.transcript ?? obj.message ?? obj.output ?? obj.text ?? line;
-    } catch { return line; }
   }
 
   dispose(): void { this.watcher?.close(); }
