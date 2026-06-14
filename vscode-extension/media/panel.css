@@ -5,4 +5,7 @@ body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); 
 .why { opacity: 0.8; font-size: 12px; margin-top: 6px; }
 .example { font-family: var(--vscode-editor-font-family); background: var(--vscode-textCodeBlock-background); padding: 4px 6px; border-radius: 4px; display: inline-block; margin-top: 6px; }
 button { margin-top: 8px; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions .ok { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.actions .fuzzy { background: transparent; color: var(--vscode-foreground); border: 1px solid var(--vscode-panel-border); padding: 4px 10px; border-radius: 4px; cursor: pointer; opacity: 0.85; }
 .progress { margin-top: 16px; font-size: 12px; opacity: 0.85; }
