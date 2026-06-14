@@ -5,9 +5,9 @@
   "plugins": [
     {
       "name": "lumi",
-      "description": "Inline mini-lessons for Claude Code: teaches each NEW tech concept once, in plain English.",
+      "description": "Inline mini-lessons for Claude Code: teaches each NEW tech concept once, in plain English. Works everywhere incl. the mobile app, using your Claude subscription.",
       "version": "0.1.0",
-      "source": "./"
+      "source": "./claude-plugin"
     }
   ]
 }
