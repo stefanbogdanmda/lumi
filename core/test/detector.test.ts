@@ -43,6 +43,9 @@ describe("detector false positives", () => {
     "the marketing branch of the company",
     "our budget is $500 this month",
     "exercise is a function of willpower",
+    "we await your reply soon",
+    "the async nature of modern life",
+    "the color schema of the brand",
   ];
   it("does not fire on benign everyday sentences", () => {
     for (const s of benign) {
@@ -53,5 +56,6 @@ describe("detector false positives", () => {
     expect(detectConcepts("ran git commit on branch main")).toContain("git-commit");
     expect(detectConcepts("the server returned HTTP 404")).toContain("http-status");
     expect(detectConcepts("define a JavaScript function and call it")).toContain("function");
+    expect(detectConcepts("use async/await to fetch data")).toContain("async");
   });
 });

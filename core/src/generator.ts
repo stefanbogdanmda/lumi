@@ -47,13 +47,14 @@ export function parseLessonJson(raw: string, concept: Concept): Lesson {
     throw new Error("Lumi: lesson JSON missing required fields");
   }
   const cap = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
+  const opt = (v: unknown, n: number) => { const s = req(v); return s ? cap(s, n) : undefined; };
   return {
     conceptId: concept.id,
     title: cap(title, 80),
     plainExplanation: cap(plain, 500),
     whyItMatters: cap(why, 200),
-    tinyExample: obj.tinyExample ? cap(req(obj.tinyExample), 120) : undefined,
-    learnMore: obj.learnMore ? cap(req(obj.learnMore), 400) : undefined,
+    tinyExample: opt(obj.tinyExample, 120),
+    learnMore: opt(obj.learnMore, 400),
   };
 }
 

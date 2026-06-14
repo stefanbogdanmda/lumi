@@ -40,6 +40,7 @@ export function extractLatestAssistantText(
     const role = entry?.message?.role ?? entry?.role ?? entry?.type;
     if (role !== "assistant") continue;
     const text = assistantText(entry);
+    // Keep the LAST assistant entry that has prose; a final tool-only entry is skipped on purpose.
     if (text) latest = text;
   }
   return latest;

@@ -59,6 +59,14 @@ describe("Lumi.processOutput", () => {
     expect(lessons).toHaveLength(1);
   });
 
+  it("keeps the highest-scored concept when capping", async () => {
+    const lumi = new Lumi({ profile: new InMemoryProfile(), generator: new MockGenerator(), cache: new InMemoryCache(), maxPerTurn: 1 });
+    // git-commit matches 2 matchers; json matches 1 -> git-commit must win
+    const lessons = await lumi.processOutput("git commit, then git commit again, and read the JSON");
+    expect(lessons).toHaveLength(1);
+    expect(lessons[0].conceptId).toBe("git-commit");
+  });
+
   it("uses the cache so a concept is generated once", async () => {
     let calls = 0;
     const gen = { generate: async (c: any) => { calls++; return { conceptId: c.id, title: c.label, plainExplanation: "x", whyItMatters: "y" }; } };

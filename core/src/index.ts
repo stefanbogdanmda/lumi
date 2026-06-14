@@ -1,6 +1,8 @@
 export * from "./types";
 export { CONCEPTS } from "./concepts";
 export { detectConcepts } from "./detector";
+export { scoreConcepts } from "./detector";
+export type { ScoredConcept } from "./detector";
 export { InMemoryProfile, JsonFileProfile } from "./profile";
 export { InMemoryCache, JsonFileCache } from "./cache";
 export { MockGenerator, ClaudeCliGenerator, buildLessonPrompt, parseLessonJson } from "./generator";
