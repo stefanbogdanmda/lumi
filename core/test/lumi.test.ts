@@ -39,6 +39,26 @@ describe("Lumi.processOutput", () => {
     expect(repeat).toHaveLength(0); // already taught
   });
 
+  it("teaches at most maxPerTurn (default 2) concepts, highest score first", async () => {
+    const lumi = makeLumi(); // default options
+    // This text contains 4+ concepts: git commit, git branch, npm install, JSON
+    const lessons = await lumi.processOutput(
+      "git commit then git branch, run npm install, read the JSON in package.json"
+    );
+    expect(lessons.length).toBeLessThanOrEqual(2);
+  });
+
+  it("respects a custom maxPerTurn", async () => {
+    const lumi = new Lumi({
+      profile: new InMemoryProfile(),
+      generator: new MockGenerator(),
+      cache: new InMemoryCache(),
+      maxPerTurn: 1,
+    });
+    const lessons = await lumi.processOutput("git commit on a git branch");
+    expect(lessons).toHaveLength(1);
+  });
+
   it("uses the cache so a concept is generated once", async () => {
     let calls = 0;
     const gen = { generate: async (c: any) => { calls++; return { conceptId: c.id, title: c.label, plainExplanation: "x", whyItMatters: "y" }; } };

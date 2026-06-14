@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectConcepts } from "../src/detector";
+import { detectConcepts, scoreConcepts } from "../src/detector";
 
 describe("detectConcepts", () => {
   it("detects a git commit from CLI output", () => {
@@ -20,5 +20,19 @@ describe("detectConcepts", () => {
 
   it("returns empty array when nothing matches", () => {
     expect(detectConcepts("the weather is nice today")).toEqual([]);
+  });
+});
+
+describe("scoreConcepts", () => {
+  it("scores by number of matching matchers and sorts descending", () => {
+    const ranked = scoreConcepts("git commit on a git branch, then git push");
+    expect(ranked[0].score).toBeGreaterThanOrEqual(ranked[ranked.length - 1].score);
+    const ids = ranked.map((r) => r.id);
+    expect(ids).toContain("git-commit");
+    expect(ids).toContain("git-branch");
+  });
+
+  it("returns empty array when nothing matches", () => {
+    expect(scoreConcepts("the weather is nice")).toEqual([]);
   });
 });

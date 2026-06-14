@@ -1,6 +1,6 @@
 import { Concept, Lesson, LearnedConcept, LearningProfile, LessonCache, LessonGenerator } from "./types";
 import { CONCEPTS } from "./concepts";
-import { detectConcepts } from "./detector";
+import { scoreConcepts } from "./detector";
 import { InMemoryCache } from "./cache";
 
 export interface LumiOptions {
@@ -8,6 +8,7 @@ export interface LumiOptions {
   generator: LessonGenerator;
   cache?: LessonCache;
   concepts?: Concept[];
+  maxPerTurn?: number;
 }
 
 export class Lumi {
@@ -15,19 +16,23 @@ export class Lumi {
   private generator: LessonGenerator;
   private cache: LessonCache;
   private concepts: Concept[];
+  private maxPerTurn: number;
 
   constructor(opts: LumiOptions) {
     this.profile = opts.profile;
     this.generator = opts.generator;
     this.cache = opts.cache ?? new InMemoryCache();
     this.concepts = opts.concepts ?? CONCEPTS;
+    this.maxPerTurn = opts.maxPerTurn ?? 2;
   }
 
   /** Detect new concepts in `text` and return lessons. Does NOT mark them learned. */
   async processOutput(text: string): Promise<Lesson[]> {
-    const newIds = detectConcepts(text, this.concepts).filter((id) => !this.profile.hasLearned(id));
+    const ranked = scoreConcepts(text, this.concepts)
+      .filter((r) => !this.profile.hasLearned(r.id))
+      .slice(0, this.maxPerTurn);
     const lessons: Lesson[] = [];
-    for (const id of newIds) {
+    for (const { id } of ranked) {
       const concept = this.concepts.find((c) => c.id === id)!;
       let lesson = this.cache.get(id);
       if (!lesson) {
