@@ -17,12 +17,16 @@ export class MockGenerator implements LessonGenerator {
 export function buildLessonPrompt(concept: Concept, context: string): string {
   return [
     `You are Lumi, a friendly mini-teacher for someone NEW to coding.`,
-    `Teach the concept "${concept.label}" in simple, encouraging language.`,
-    `Context where it appeared (may help you tailor it): """${context.slice(0, 800)}"""`,
+    `Teach ONLY the concept "${concept.label}" — nothing else.`,
+    `Start the explanation by referring to what just happened, e.g. "Claude just ...".`,
+    `Rules: plain English, no jargon (define any unavoidable term in the same sentence).`,
+    `Do not invent specific names, numbers, or commands that are not in the context.`,
+    `If you are unsure of a detail, stay general rather than guessing.`,
+    `Context where it appeared (use it to anchor the lesson): """${context.slice(0, 800)}"""`,
     ``,
     `Reply with ONLY a JSON code block, no prose, in exactly this shape:`,
     "```json",
-    `{"title":"...","plainExplanation":"2-3 short sentences in plain English",`,
+    `{"title":"...","plainExplanation":"2-3 short sentences, <= 400 chars",`,
     `"whyItMatters":"one sentence","tinyExample":"optional, <= 1 line","learnMore":"optional, 2-3 sentences"}`,
     "```",
   ].join("\n");
@@ -37,16 +41,19 @@ export function parseLessonJson(raw: string, concept: Concept): Lesson {
   let obj: any;
   try { obj = JSON.parse(jsonText.trim()); }
   catch { throw new Error("Lumi: could not parse lesson JSON from model output"); }
-  if (!obj.title || !obj.plainExplanation || !obj.whyItMatters) {
+  const req = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const title = req(obj.title), plain = req(obj.plainExplanation), why = req(obj.whyItMatters);
+  if (!title || !plain || !why) {
     throw new Error("Lumi: lesson JSON missing required fields");
   }
+  const cap = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
   return {
     conceptId: concept.id,
-    title: String(obj.title),
-    plainExplanation: String(obj.plainExplanation),
-    whyItMatters: String(obj.whyItMatters),
-    tinyExample: obj.tinyExample ? String(obj.tinyExample) : undefined,
-    learnMore: obj.learnMore ? String(obj.learnMore) : undefined,
+    title: cap(title, 80),
+    plainExplanation: cap(plain, 500),
+    whyItMatters: cap(why, 200),
+    tinyExample: obj.tinyExample ? cap(req(obj.tinyExample), 120) : undefined,
+    learnMore: obj.learnMore ? cap(req(obj.learnMore), 400) : undefined,
   };
 }
 
