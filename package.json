@@ -1,0 +1,11 @@
+{
+  "name": "lumi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Lumi — a friendly mini-teacher for Claude Code.",
+  "workspaces": ["core", "vscode-extension"],
+  "scripts": {
+    "test": "npm run test --workspace core",
+    "build": "npm run build --workspace core"
+  }
+}
