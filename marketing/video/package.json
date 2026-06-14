@@ -1,0 +1,22 @@
+{
+  "name": "lumi-marketing-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lumi 30-second marketing video, built with Remotion.",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render LumiPromo out/lumi-promo.mp4 --concurrency=2",
+    "still": "remotion still LumiPromo out/frame.png",
+    "soundtrack": "node scripts/make-soundtrack.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.380",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.380"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "typescript": "5.9.3"
+  }
+}
