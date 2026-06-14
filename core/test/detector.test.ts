@@ -14,7 +14,7 @@ describe("detectConcepts", () => {
   });
 
   it("returns each concept at most once", () => {
-    const ids = detectConcepts("commit commit commit");
+    const ids = detectConcepts("git commit, then another git commit, then git commit again");
     expect(ids.filter((i) => i === "git-commit")).toHaveLength(1);
   });
 
@@ -34,5 +34,24 @@ describe("scoreConcepts", () => {
 
   it("returns empty array when nothing matches", () => {
     expect(scoreConcepts("the weather is nice")).toEqual([]);
+  });
+});
+
+describe("detector false positives", () => {
+  const benign = [
+    "I'm committed to the plan",
+    "the marketing branch of the company",
+    "our budget is $500 this month",
+    "exercise is a function of willpower",
+  ];
+  it("does not fire on benign everyday sentences", () => {
+    for (const s of benign) {
+      expect(detectConcepts(s)).toEqual([]);
+    }
+  });
+  it("still detects real technical usage", () => {
+    expect(detectConcepts("ran git commit on branch main")).toContain("git-commit");
+    expect(detectConcepts("the server returned HTTP 404")).toContain("http-status");
+    expect(detectConcepts("define a JavaScript function and call it")).toContain("function");
   });
 });
