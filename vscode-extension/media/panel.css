@@ -1,0 +1,8 @@
+body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); padding: 8px; }
+.empty { opacity: 0.7; font-style: italic; }
+.card { border: 1px solid var(--vscode-panel-border); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+.card h3 { margin: 0 0 6px; font-size: 13px; }
+.why { opacity: 0.8; font-size: 12px; margin-top: 6px; }
+.example { font-family: var(--vscode-editor-font-family); background: var(--vscode-textCodeBlock-background); padding: 4px 6px; border-radius: 4px; display: inline-block; margin-top: 6px; }
+button { margin-top: 8px; }
+.progress { margin-top: 16px; font-size: 12px; opacity: 0.85; }
