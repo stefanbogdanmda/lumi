@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
-import { COLORS, FONT } from "../theme";
+import { COLORS, FONT, useLayout } from "../theme";
 import { FadeUp } from "../components/ui";
 import { LumiSpark } from "../components/LumiSpark";
 
@@ -27,9 +27,12 @@ const BENEFITS = [
 
 // Scene 4 (21–27s): why you need Lumi.
 export const Benefits: React.FC = () => {
+  const { portrait, width } = useLayout();
+  const cardW = portrait ? width - 120 : 1120;
+
   return (
     <AbsoluteFill style={{ fontFamily: FONT }}>
-      <div style={{ position: "absolute", top: 92, width: "100%", textAlign: "center" }}>
+      <div style={{ position: "absolute", top: portrait ? 230 : 92, width: "100%", textAlign: "center" }}>
         <FadeUp delay={2}>
           <div style={{ fontSize: 54, fontWeight: 800, color: COLORS.ink }}>
             Why you need <span style={{ color: COLORS.glow }}>Lumi</span>
@@ -38,67 +41,67 @@ export const Benefits: React.FC = () => {
       </div>
 
       {/* Spark accent */}
-      <div style={{ position: "absolute", right: 150, top: 250, opacity: 0.85 }}>
-        <FadeUp delay={10}>
-          <LumiSpark size={150} pulse sparkles />
-        </FadeUp>
-      </div>
-
       <div
         style={{
           position: "absolute",
-          left: 180,
-          top: 270,
-          display: "flex",
-          flexDirection: "column",
-          gap: 30,
+          ...(portrait ? { top: 360, left: "50%", transform: "translateX(-50%)" } : { right: 150, top: 250 }),
+          opacity: 0.9,
         }}
       >
-        {BENEFITS.map((b, i) => (
-          <FadeUp key={b.title} delay={18 + i * 22} y={50}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 28,
-                width: 1120,
-                padding: "26px 34px",
-                borderRadius: 20,
-                background:
-                  "linear-gradient(120deg, rgba(20,26,68,0.78), rgba(12,16,42,0.78))",
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-              }}
-            >
+        <FadeUp delay={10}>
+          <LumiSpark size={portrait ? 130 : 150} pulse sparkles />
+        </FadeUp>
+      </div>
+
+      <AbsoluteFill
+        style={{
+          alignItems: "center",
+          justifyContent: portrait ? "center" : "flex-start",
+          paddingTop: portrait ? 80 : 270,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+          {BENEFITS.map((b, i) => (
+            <FadeUp key={b.title} delay={18 + i * 22} y={50}>
               <div
                 style={{
-                  width: 86,
-                  height: 86,
-                  borderRadius: 20,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 44,
-                  background: `${b.color}1f`,
-                  border: `1.5px solid ${b.color}66`,
-                  boxShadow: `0 0 30px ${b.color}33`,
-                  flexShrink: 0,
+                  gap: 28,
+                  width: cardW,
+                  padding: "26px 34px",
+                  borderRadius: 20,
+                  background: "linear-gradient(120deg, rgba(20,26,68,0.78), rgba(12,16,42,0.78))",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
                 }}
               >
-                {b.icon}
-              </div>
-              <div>
-                <div style={{ fontSize: 38, fontWeight: 800, color: COLORS.ink }}>
-                  {b.title}
+                <div
+                  style={{
+                    width: 86,
+                    height: 86,
+                    borderRadius: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 44,
+                    background: `${b.color}1f`,
+                    border: `1.5px solid ${b.color}66`,
+                    boxShadow: `0 0 30px ${b.color}33`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {b.icon}
                 </div>
-                <div style={{ fontSize: 27, color: COLORS.inkSoft, marginTop: 4 }}>
-                  {b.body}
+                <div>
+                  <div style={{ fontSize: 38, fontWeight: 800, color: COLORS.ink }}>{b.title}</div>
+                  <div style={{ fontSize: 27, color: COLORS.inkSoft, marginTop: 4 }}>{b.body}</div>
                 </div>
               </div>
-            </div>
-          </FadeUp>
-        ))}
-      </div>
+            </FadeUp>
+          ))}
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

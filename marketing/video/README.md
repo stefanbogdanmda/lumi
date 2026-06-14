@@ -10,13 +10,23 @@ whole thing renders from this repo.
 ```bash
 cd marketing/video
 npm install
-npm run soundtrack   # regenerate public/audio/soundtrack.wav (already committed)
-npm run dev          # open Remotion Studio to preview & scrub
-npm run render       # render out/lumi-promo.mp4 (1920×1080, 30fps, with audio)
-npm run still        # render a single still frame
+npm run soundtrack        # regenerate public/audio/soundtrack.wav (already committed)
+npm run dev               # open Remotion Studio to preview & scrub
+npm run render            # 16:9 master  → out/lumi-promo.mp4
+npm run render:vertical   # 9:16 social  → out/lumi-promo-vertical.mp4
+npm run still             # render a single still frame
 ```
 
-Output: `out/lumi-promo.mp4` — **1920×1080, 30 fps, 900 frames (30.0s)**, H.264 + AAC.
+Two compositions render from the same timeline:
+
+| Composition | Aspect | Resolution | Use |
+|-------------|--------|------------|-----|
+| `LumiPromo` | 16:9 | 1920×1080 | website, YouTube, presentations |
+| `LumiPromoVertical` | 9:16 | 1080×1920 | Reels / TikTok / Shorts / Stories |
+
+Both are **30 fps, 900 frames (30.0s)**, H.264 + AAC. Scenes are layout-aware
+(`useLayout()` in [`src/theme.ts`](src/theme.ts)) and reflow for portrait —
+side-by-side panels stack, widths fit the frame.
 
 ## The story (and why it sells Lumi)
 
@@ -34,8 +44,10 @@ problem (comprehension debt) → meet Lumi → how it works → benefits → cal
 ## Music sync
 
 The soundtrack (`scripts/make-soundtrack.mjs`) is an original, royalty-free piece
-generated as raw PCM — a warm, hopeful electronic bed (pad chords on an uplifting
-I–V–vi–IV progression, sub kick, hats, a bright arpeggio, and bell "sparkles").
+rendered offline through a real Web Audio engine (`node-web-audio-api`): supersaw
+pads on a warm C–G–Am–F progression, a sub bass, a plucked arpeggio, a singing
+lead melody, layered drums (kick / clap / hats), convolution reverb, a tempo
+delay, and a sidechain "pump" so the mix breathes with the kick.
 
 It runs at **120 BPM**, so **1 beat = 15 frames** and **1 bar = 60 frames (2s)**.
 Every scene cut in [`src/theme.ts`](src/theme.ts) (`SCENES`) lands on a bar

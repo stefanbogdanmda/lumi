@@ -1,3 +1,11 @@
+import { useVideoConfig } from "remotion";
+
+// Layout helper: scenes adapt between the 16:9 master and the 9:16 social cut.
+export const useLayout = () => {
+  const { width, height } = useVideoConfig();
+  return { width, height, portrait: height > width };
+};
+
 // Lumi brand design tokens for the promo video.
 // Lumi = light / illumination. Warm amber "glow" accent on a deep indigo night,
 // friendly and premium. The mascot is a small glowing "spark".
