@@ -71,6 +71,15 @@ Then register `vscode-extension/hook/lumi-hook.sh` as a Stop hook in your Claude
 settings and open the **Lumi** view in the Explorer sidebar. See
 [`vscode-extension/README.md`](vscode-extension/README.md) for details.
 
+## What's new in v1.1
+
+- **Calmer teaching:** Lumi now ranks the concepts it spots and teaches at most **2 per turn**, so a busy output never buries you in lessons.
+- **Fewer false alarms, more coverage:** smarter matchers stop firing on ordinary English (like "committed to the plan" or "branch of the company"), while the dictionary grew to **~36 concepts**.
+- **Lessons anchored to the moment:** each lesson starts from what Claude *just* did, with built-in safety checks that stop it inventing details and keep it short.
+- **Fixed the VS Code Panel bug:** the panel now reads Claude's **actual reply** from the conversation transcript instead of the behind-the-scenes hook data.
+- **Continuous Integration:** every push runs the tests, builds, compiles the extension, and checks the manifests automatically.
+- **Honest feedback buttons:** each lesson now has **"Makes sense ✅"** and **"Still fuzzy 🤔"** — "still fuzzy" lets Lumi explain that concept again later instead of silencing it.
+
 ## Design
 
 For the full design and rationale, see
