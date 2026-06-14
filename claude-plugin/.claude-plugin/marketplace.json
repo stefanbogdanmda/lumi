@@ -1,0 +1,13 @@
+{
+  "name": "lumi",
+  "description": "Lumi — a friendly mini-teacher that explains new tech concepts as you work.",
+  "owner": { "name": "Lumi" },
+  "plugins": [
+    {
+      "name": "lumi",
+      "description": "Inline mini-lessons for Claude Code: teaches each NEW tech concept once, in plain English.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}
