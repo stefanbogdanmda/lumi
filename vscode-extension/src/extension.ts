@@ -13,9 +13,12 @@ export function activate(context: vscode.ExtensionContext): void {
     generator: new ClaudeCliGenerator(),
   });
 
-  const panel = new LumiPanel(context.extensionUri, (conceptId) => {
-    lumi.markLearned(conceptId);
-    panel.setProgress(lumi.listLearned().length);
+  const panel = new LumiPanel(context.extensionUri, (type, conceptId) => {
+    if (type === "gotit") {
+      lumi.markLearned(conceptId);
+      panel.setProgress(lumi.listLearned().length);
+    }
+    // "fuzzy": leave the concept unlearned so Lumi can re-teach it later.
   });
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("lumiPanel", panel)

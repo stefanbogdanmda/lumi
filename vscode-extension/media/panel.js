@@ -15,10 +15,14 @@ window.addEventListener("message", (e) => {
       `<div>${escapeHtml(msg.lesson.plainExplanation)}</div>` +
       `<div class="why">Why it matters: ${escapeHtml(msg.lesson.whyItMatters)}</div>` +
       (msg.lesson.tinyExample ? `<div class="example">${escapeHtml(msg.lesson.tinyExample)}</div>` : "") +
-      `<div><button>Got it ✅</button></div>`;
-    div.querySelector("button").addEventListener("click", () => {
+      `<div class="actions"><button class="ok">Makes sense ✅</button> <button class="fuzzy">Still fuzzy 🤔</button></div>`;
+    div.querySelector(".ok").addEventListener("click", () => {
       vscode.postMessage({ type: "gotit", conceptId: msg.lesson.conceptId });
       div.style.opacity = "0.5";
+    });
+    div.querySelector(".fuzzy").addEventListener("click", () => {
+      vscode.postMessage({ type: "fuzzy", conceptId: msg.lesson.conceptId });
+      div.querySelector(".fuzzy").textContent = "I'll explain again later 👍";
     });
     cards.prepend(div);
   } else if (msg.type === "progress") {

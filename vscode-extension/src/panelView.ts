@@ -4,14 +4,17 @@ import { Lesson } from "@lumi/core";
 
 export class LumiPanel implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
-  constructor(private extensionUri: vscode.Uri, private onGotIt: (conceptId: string) => void) {}
+  constructor(
+    private extensionUri: vscode.Uri,
+    private onAction: (type: "gotit" | "fuzzy", conceptId: string) => void,
+  ) {}
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     view.webview.options = { enableScripts: true, localResourceRoots: [this.extensionUri] };
     view.webview.html = this.html(view.webview);
     view.webview.onDidReceiveMessage((m) => {
-      if (m.type === "gotit") this.onGotIt(m.conceptId);
+      if (m.type === "gotit" || m.type === "fuzzy") this.onAction(m.type, m.conceptId);
     });
   }
 
