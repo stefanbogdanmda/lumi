@@ -31,7 +31,9 @@ export function buildLessonPrompt(concept: Concept, context: string): string {
 /** Pull a Lesson out of model output that contains a ```json block (or raw JSON). */
 export function parseLessonJson(raw: string, concept: Concept): Lesson {
   const fenced = raw.match(/```json\s*([\s\S]*?)```/i);
-  const jsonText = fenced ? fenced[1] : raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
+  const start = raw.indexOf("{"), end = raw.lastIndexOf("}");
+  const jsonText = fenced ? fenced[1]
+    : (start !== -1 && end > start ? raw.slice(start, end + 1) : "");
   let obj: any;
   try { obj = JSON.parse(jsonText.trim()); }
   catch { throw new Error("Lumi: could not parse lesson JSON from model output"); }

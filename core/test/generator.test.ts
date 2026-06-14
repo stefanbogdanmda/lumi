@@ -21,6 +21,13 @@ describe("parseLessonJson", () => {
     expect(l.conceptId).toBe("git-commit");
   });
 
+  it("extracts a lesson from raw JSON with no code fence", () => {
+    const raw = 'Here you go: {"title":"Git commit","plainExplanation":"Saves a snapshot.","whyItMatters":"History."} cheers';
+    const l = parseLessonJson(raw, concept);
+    expect(l.title).toBe("Git commit");
+    expect(l.conceptId).toBe("git-commit");
+  });
+
   it("throws on unparseable output", () => {
     expect(() => parseLessonJson("no json here", concept)).toThrow();
   });
