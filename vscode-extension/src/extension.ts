@@ -23,6 +23,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const configured = vscode.workspace.getConfiguration("lumi").get<string>("watchFile");
   const feedPath = HookBridge.defaultFeedPath(configured);
+  // Note: onText is async and fire-and-forget; under bursty input lessons may render
+  // slightly out of order. That's cosmetic for this card list.
   const bridge = new HookBridge(feedPath, async (text) => {
     try {
       const lessons = await lumi.processOutput(text);

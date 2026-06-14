@@ -24,13 +24,17 @@ export class HookBridge {
   private readNew(): void {
     let size: number;
     try { size = fs.statSync(this.feedPath).size; } catch { return; }
-    if (size <= this.pos) { this.pos = size; return; }
+    if (size < this.pos) { this.pos = size; return; } // file shrank/rotated in place
+    if (size === this.pos) return;
     const fd = fs.openSync(this.feedPath, "r");
     try {
       const buf = Buffer.alloc(size - this.pos);
       fs.readSync(fd, buf, 0, buf.length, this.pos);
-      this.pos = size;
-      for (const line of buf.toString("utf8").split("\n")) {
+      const text = buf.toString("utf8");
+      const lastNl = text.lastIndexOf("\n");
+      if (lastNl === -1) return; // no complete line yet; leave pos so we re-read next event
+      this.pos += Buffer.byteLength(text.slice(0, lastNl + 1), "utf8");
+      for (const line of text.slice(0, lastNl).split("\n")) {
         if (!line.trim()) continue;
         this.onText(this.extractText(line));
       }
