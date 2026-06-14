@@ -1,0 +1,32 @@
+{
+  "name": "lumi-panel",
+  "displayName": "Lumi — Mini-Teacher",
+  "description": "A friendly side-panel that teaches you each new tech concept Claude Code uses.",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Education", "Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [{ "id": "lumiPanel", "name": "Lumi", "type": "webview" }]
+    },
+    "configuration": {
+      "title": "Lumi",
+      "properties": {
+        "lumi.watchFile": {
+          "type": "string",
+          "default": "",
+          "description": "Path the Lumi hook writes Claude Code output to. Defaults to <home>/.lumi/feed.jsonl"
+        }
+      }
+    }
+  },
+  "scripts": { "compile": "tsc -p ./", "watch": "tsc -watch -p ./" },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": { "@lumi/core": "*" }
+}
