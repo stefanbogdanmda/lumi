@@ -1,0 +1,42 @@
+{
+  "name": "lumi",
+  "version": "0.1.0",
+  "description": "Inline mini-lessons for Codex: teaches each new tech concept once, in plain English, as you work.",
+  "author": {
+    "name": "Stefan Bogdan",
+    "email": "removed@example.com",
+    "url": "https://github.com/stefanbogdanmda"
+  },
+  "homepage": "https://github.com/stefanbogdanmda/digitalproduct",
+  "repository": "https://github.com/stefanbogdanmda/digitalproduct",
+  "license": "MIT",
+  "keywords": [
+    "learning",
+    "teaching",
+    "beginner",
+    "explain",
+    "education",
+    "non-technical"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Lumi",
+    "shortDescription": "Teaches you each new tech concept once, in plain English, right inside your coding session",
+    "longDescription": "Lumi is a warm, encouraging mini-teacher that rides along inside your coding tool. Every time a new technical concept appears — a git command, an API call, a JSON file — Lumi adds a short, friendly lesson at the end of the reply. It never repeats a concept you already know, and it remembers what you have learned across sessions using a shared profile at ~/.lumi/profile.json. Perfect for non-technical founders, designers, and learners who want to understand what their AI assistant is actually doing.",
+    "developerName": "Stefan Bogdan",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Help me understand what you just did.",
+      "Explain this to me like I'm not a developer."
+    ],
+    "websiteURL": "https://github.com/stefanbogdanmda/digitalproduct",
+    "privacyPolicyURL": "https://github.com/stefanbogdanmda/digitalproduct/blob/main/docs/privacy.md",
+    "termsOfServiceURL": "https://github.com/stefanbogdanmda/digitalproduct/blob/main/docs/terms.md",
+    "brandColor": "#a78bfa"
+  }
+}

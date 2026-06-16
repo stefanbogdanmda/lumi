@@ -1,0 +1,10 @@
+{
+  "name": "lumi-billing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stripe webhook that issues Lumi Pro license keys on payment.",
+  "type": "module",
+  "dependencies": {
+    "stripe": "^16.0.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "lumi",
+  "description": "Inline mini-lessons for Claude Code: teaches each NEW tech concept once, in plain English.",
+  "version": "0.1.0",
+  "keywords": ["learning", "teaching", "beginner", "explain"]
+}

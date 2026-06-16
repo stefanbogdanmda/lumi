@@ -1,0 +1,11 @@
+# Build output
+dist/
+
+# Dependencies
+node_modules/
+
+# License private keys — NEVER commit these
+scripts/*-private*.pem
+scripts/lumi-license-private.pem
+*.private.pem
+lumi-license-private.pem

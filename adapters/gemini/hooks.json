@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "name": "lumi-feed",
+            "type": "command",
+            "command": "bash \"${extensionPath}/hooks/lumi-gemini-hook.sh\"",
+            "timeout": 60000
+          }
+        ]
+      }
+    ]
+  }
+}

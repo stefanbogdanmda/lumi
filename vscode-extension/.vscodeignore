@@ -1,0 +1,6 @@
+src/**
+tsconfig.json
+esbuild.js
+**/*.ts
+node_modules/**
+!out/extension.js

@@ -1,0 +1,47 @@
+{
+  "name": "lumi-panel",
+  "displayName": "Lumi — Mini-Teacher",
+  "description": "A friendly side-panel that teaches you the concept behind what your AI coding tool (Claude Code, Codex, Cursor, Copilot, Gemini, OpenCode) just did — remembers it, reviews it, and flags risky code. For non-technical builders.",
+  "version": "0.1.0",
+  "icon": "media/icon.png",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Education", "Other"],
+  "keywords": ["learn to code", "AI onboarding", "beginner", "Claude", "non-technical", "tutor", "explain code", "upskilling", "mentor", "plain English"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "publisher": "lumi-app",
+  "repository": { "type": "git", "url": "https://github.com/stefanbogdanmda/digitalproduct" },
+  "license": "MIT",
+  "contributes": {
+    "views": {
+      "explorer": [{ "id": "lumiPanel", "name": "Lumi", "type": "webview" }]
+    },
+    "configuration": {
+      "title": "Lumi",
+      "properties": {
+        "lumi.watchFile": {
+          "type": "string",
+          "default": "",
+          "description": "Path the Lumi hook writes Claude Code output to. Defaults to <home>/.lumi/feed.jsonl"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./ --noEmit",
+    "watch": "tsc -watch -p ./ --noEmit",
+    "bundle": "node esbuild.js",
+    "vscode:prepublish": "npm run bundle -- --minify",
+    "package": "vsce package --no-dependencies",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0",
+    "esbuild": "^0.21.0",
+    "@vscode/vsce": "^2.26.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": { "@lumi/core": "*" }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "lumi-marketing-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lumi 30-second marketing video, built with Remotion.",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render LumiPromo out/lumi-promo.mp4 --concurrency=2",
+    "render:vertical": "remotion render LumiPromoVertical out/lumi-promo-vertical.mp4 --concurrency=2",
+    "render:usecase": "remotion render LumiUseCase out/lumi-usecase.mp4 --concurrency=2",
+    "render:usecase:vertical": "remotion render LumiUseCaseVertical out/lumi-usecase-vertical.mp4 --concurrency=2",
+    "launch:9x16": "remotion render LumiLaunchVertical out/lumi-launch-9x16.mp4 --concurrency=4",
+    "launch:1x1": "remotion render LumiLaunchSquare out/lumi-launch-1x1.mp4 --concurrency=4",
+    "launch:16x9": "remotion render LumiLaunch out/lumi-launch-16x9.mp4 --concurrency=4",
+    "launch:all": "npm run launch:9x16 && npm run launch:1x1 && npm run launch:16x9",
+    "still": "remotion still LumiPromo out/frame.png",
+    "soundtrack": "node scripts/make-soundtrack.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.380",
+    "@remotion/transitions": "^4.0.380",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.380"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "node-web-audio-api": "^1.0.4",
+    "typescript": "5.9.3"
+  }
+}

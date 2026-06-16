@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+*.vsix
+.lumi/
+
+# Tauri desktop overlay build artefacts
+desktop-overlay/node_modules/
+desktop-overlay/src-tauri/target/
+
+# License-signing private keys — NEVER commit (mint unlimited Pro licenses)
+*.pem
+lumi-license-private.pem

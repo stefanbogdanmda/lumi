@@ -1,0 +1,22 @@
+{
+  "name": "lumi",
+  "displayName": "Lumi",
+  "description": "Inline mini-lessons for Cursor: teaches each new tech concept once, in plain English, as you work.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Stefan Bogdan",
+    "email": "removed@example.com"
+  },
+  "homepage": "https://github.com/stefanbogdanmda/digitalproduct",
+  "repository": "https://github.com/stefanbogdanmda/digitalproduct",
+  "license": "MIT",
+  "keywords": [
+    "learning",
+    "teaching",
+    "beginner",
+    "explain",
+    "education",
+    "non-technical"
+  ],
+  "skills": "./skills/"
+}
