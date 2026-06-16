@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "bash ~/.lumi/adapters/copilot/lumi-copilot-hook.sh",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

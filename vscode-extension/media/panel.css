@@ -1,0 +1,98 @@
+body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); padding: 0; margin: 0; }
+
+.header { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--vscode-panel-border); }
+.header .title { font-size: 14px; font-weight: 600; }
+.collapse-toggle { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; font-size: 13px; padding: 2px 6px; opacity: 0.8; }
+.collapse-toggle:hover { opacity: 1; }
+
+.tier-pill { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: var(--vscode-textCodeBlock-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-panel-border); opacity: 0.8; margin-left: auto; margin-right: 4px; }
+.tier-pill.pro { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border-color: var(--vscode-button-background); opacity: 1; }
+
+.body { padding: 8px 10px; }
+body.collapsed .body { display: none; }
+
+.tabs { display: flex; gap: 0; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 8px; border-bottom: 1px solid var(--vscode-panel-border); scrollbar-width: thin; scrollbar-color: var(--vscode-panel-border) transparent; }
+.tabs::-webkit-scrollbar { height: 3px; }
+.tabs::-webkit-scrollbar-thumb { background: var(--vscode-panel-border); border-radius: 2px; }
+.tabs::-webkit-scrollbar-track { background: transparent; }
+.tab { flex: 0 0 auto; background: transparent; color: var(--vscode-foreground); border: none; border-bottom: 2px solid transparent; padding: 5px 8px; cursor: pointer; font-size: 12px; opacity: 0.75; white-space: nowrap; }
+.tab:hover { opacity: 1; }
+.tab.active { opacity: 1; border-bottom-color: var(--vscode-focusBorder); font-weight: 600; }
+
+.empty { opacity: 0.7; font-style: italic; }
+.card { border: 1px solid var(--vscode-panel-border); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+.card h3 { margin: 0 0 6px; font-size: 13px; }
+.why { opacity: 0.8; font-size: 12px; margin-top: 6px; }
+.analogy { opacity: 0.85; font-size: 12px; font-style: italic; margin-top: 6px; }
+.example { font-family: var(--vscode-editor-font-family); background: var(--vscode-textCodeBlock-background); padding: 4px 6px; border-radius: 4px; display: inline-block; margin-top: 6px; }
+button { margin-top: 8px; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions .ok { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.actions .fuzzy { background: transparent; color: var(--vscode-foreground); border: 1px solid var(--vscode-panel-border); padding: 4px 10px; border-radius: 4px; cursor: pointer; opacity: 0.85; }
+
+.glossary-text { white-space: pre-wrap; font-size: 12px; line-height: 1.5; margin: 0; }
+
+#review { list-style: none; padding: 0; margin: 0; }
+#review li { border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 6px 10px; margin: 6px 0; font-size: 12px; }
+
+.explain-input { display: flex; gap: 6px; align-items: center; }
+.explain-input input { flex: 1; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 4px; padding: 4px 8px; }
+.explain-input .ok { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; margin-top: 0; }
+
+.footer { margin-top: 16px; border-top: 1px solid var(--vscode-panel-border); padding-top: 8px; }
+.progress { font-size: 12px; opacity: 0.85; }
+.milestone { font-size: 12px; margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: var(--vscode-textCodeBlock-background); }
+
+/* ── Active-recall quick-check ──────────────────────────────── */
+.qc-prompt { font-size: 12px; opacity: 0.8; font-style: italic; margin: 4px 0 6px; line-height: 1.4; }
+.qc-reveal-btn { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-bottom: 6px; }
+.qc-body { display: none; }
+.qc-body.revealed { display: block; }
+
+/* ── Shared action button ───────────────────────────────────── */
+.action-btn { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 0; }
+.action-btn:hover { opacity: 0.9; }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.secondary-btn { background: transparent; color: var(--vscode-foreground); border: 1px solid var(--vscode-panel-border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 4px; }
+.secondary-btn:hover { opacity: 0.8; }
+
+/* ── Coach tab ──────────────────────────────────────────────── */
+.coach-heading { font-size: 12px; opacity: 0.8; margin-bottom: 10px; line-height: 1.4; }
+#coachResult { white-space: pre-wrap; font-size: 12px; line-height: 1.6; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: var(--vscode-textCodeBlock-background); }
+
+/* ── Prompt tab ─────────────────────────────────────────────── */
+.prompt-heading { font-size: 12px; opacity: 0.8; margin-bottom: 8px; line-height: 1.4; }
+.prompt-textarea, .paste-textarea { width: 100%; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 4px; padding: 6px 8px; font-size: 12px; font-family: var(--vscode-font-family); resize: vertical; min-height: 72px; outline: none; }
+.prompt-textarea:focus, .paste-textarea:focus { border-color: var(--vscode-focusBorder); }
+.prompt-hint, .paste-hint { font-size: 11px; opacity: 0.7; font-style: italic; min-height: 14px; margin: 4px 0; }
+#promptOutputWrap { margin-top: 8px; }
+#promptOutput { white-space: pre-wrap; font-size: 12px; line-height: 1.6; padding: 8px 10px; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: var(--vscode-textCodeBlock-background); margin-bottom: 6px; }
+
+/* ── Paste tab ──────────────────────────────────────────────── */
+.paste-heading { font-size: 12px; opacity: 0.8; margin-bottom: 8px; line-height: 1.4; }
+#pasteResult { font-size: 12px; margin-top: 8px; color: var(--vscode-foreground); }
+
+/* ── Paths tab ──────────────────────────────────────────────── */
+.path-card { border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 10px 12px; margin: 8px 0; }
+.path-card.locked { opacity: 0.75; }
+.path-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+.path-bar-wrap { background: var(--vscode-textCodeBlock-background); border-radius: 3px; height: 6px; overflow: hidden; margin-bottom: 4px; }
+.path-bar-fill { height: 100%; background: var(--vscode-focusBorder); border-radius: 3px; transition: width 0.3s ease; }
+.path-meta { font-size: 11px; opacity: 0.75; display: flex; justify-content: space-between; }
+.path-next { font-size: 11px; opacity: 0.75; margin-top: 3px; }
+.path-locked-banner { margin-top: 6px; font-size: 11px; opacity: 0.85; }
+.path-upgrade-link { color: var(--vscode-textLink-foreground, var(--vscode-focusBorder)); text-decoration: none; font-weight: 600; }
+.path-upgrade-link:hover { text-decoration: underline; }
+.path-upgrade-btn { background: none; border: none; padding: 0; color: var(--vscode-textLink-foreground, var(--vscode-focusBorder)); font-weight: 600; font-size: 11px; cursor: pointer; text-decoration: none; }
+.path-upgrade-btn:hover { text-decoration: underline; }
+.path-license-form { display: none; margin-top: 6px; }
+.path-license-form.visible { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.path-license-input { flex: 1; min-width: 100px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); border-radius: 4px; padding: 3px 7px; font-size: 11px; outline: none; }
+.path-license-input:focus { border-color: var(--vscode-focusBorder); }
+.path-license-activate-btn { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer; }
+.path-license-activate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.path-license-hint { font-size: 10px; opacity: 0.7; font-style: italic; width: 100%; margin-top: 2px; }
+
+/* ── Digest tab ─────────────────────────────────────────────── */
+.digest-heading { font-size: 12px; opacity: 0.8; margin-bottom: 8px; }
+#digestOutput { white-space: pre-wrap; font-size: 12px; line-height: 1.6; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: var(--vscode-textCodeBlock-background); }

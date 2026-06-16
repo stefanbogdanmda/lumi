@@ -1,0 +1,28 @@
+{
+  "name": "@lumi/core",
+  "version": "0.1.0",
+  "description": "Lumi — a friendly mini-teacher that rides inside your AI coding tool and teaches the concept behind what the AI just did, remembers it across tools, reviews it, and flags risky code. Built for non-technical builders.",
+  "keywords": [
+    "learn to code", "AI", "tutor", "non-technical", "vibe coding", "explain code",
+    "security", "Claude", "Codex", "Cursor", "Copilot", "Gemini", "spaced repetition", "CLI"
+  ],
+  "homepage": "https://github.com/stefanbogdanmda/digitalproduct#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/stefanbogdanmda/digitalproduct.git", "directory": "core" },
+  "bugs": { "url": "https://github.com/stefanbogdanmda/digitalproduct/issues" },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": { "lumi": "dist/cli-bin.js" },
+  "files": ["dist", "README.md"],
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.11.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "lumi",
+  "description": "Inline mini-lessons for Gemini CLI: teaches each new tech concept once, in plain English, as you work.",
+  "version": "0.1.0",
+  "contextFileName": "GEMINI.md"
+}
