@@ -19,7 +19,7 @@ REPO_NAME="${1:-lumi-plugin}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/claude-plugin"
 
-if [ ! -d "$SRC" ]; then echo "error: $SRC not found (run from the digitalproduct repo)"; exit 1; fi
+if [ ! -d "$SRC" ]; then echo "error: $SRC not found (run from the lumi repo)"; exit 1; fi
 if ! command -v gh >/dev/null 2>&1; then echo "error: GitHub CLI (gh) not found. Install it + 'gh auth login' first."; exit 1; fi
 
 OWNER="$(gh api user --jq .login)"

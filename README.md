@@ -95,7 +95,7 @@ verified live vs. offline.
 **1. Inline (recommended — works on mobile).** In Claude Code, type:
 
 ```
-/plugin marketplace add stefanbogdanmda/digitalproduct
+/plugin marketplace add stefanbogdanmda/lumi
 /plugin install lumi@lumi
 ```
 
@@ -199,8 +199,6 @@ npm run build --workspace core  # produce core/dist
 - **[`docs/WHAT-LUMI-DOES.md`](docs/WHAT-LUMI-DOES.md)** — exactly how Lumi works
 - **[`docs/INSTALL.md`](docs/INSTALL.md)** — install & troubleshooting
 - **[`adapters/README.md`](adapters/README.md)** — connect any AI tool
-- **[`docs/competitive-plan.md`](docs/competitive-plan.md)** — positioning & wedge
-- **[`docs/business/`](docs/business/)** — positioning, pricing, go-to-market, outreach
 
 ## License
 

@@ -89,5 +89,5 @@ Then point `opencode.json` at the local path:
 
 ## Getting Help
 
-- Report issues: https://github.com/stefanbogdanmda/digitalproduct/issues
-- Full documentation: https://github.com/stefanbogdanmda/digitalproduct/blob/main/docs/integrations.md
+- Report issues: https://github.com/stefanbogdanmda/lumi/issues
+- Full documentation: https://github.com/stefanbogdanmda/lumi/blob/main/docs/integrations.md

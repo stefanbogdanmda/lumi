@@ -7,7 +7,7 @@ using your existing Claude subscription (no API key).
 ## Install
 
 ```
-/plugin marketplace add stefanbogdanmda/digitalproduct
+/plugin marketplace add stefanbogdanmda/lumi
 /plugin install lumi@lumi
 ```
 

@@ -11,3 +11,6 @@ desktop-overlay/src-tauri/target/
 # License-signing private keys — NEVER commit (mint unlimited Pro licenses)
 *.pem
 lumi-license-private.pem
+
+# Local test artefacts
+.lumi-test/

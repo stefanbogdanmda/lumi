@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { lumiHome, profilePath, cachePath } from "../src/paths";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 describe("paths", () => {
@@ -19,7 +20,7 @@ describe("paths", () => {
     const prev = process.env.LUMI_HOME;
     process.env.LUMI_HOME = "   ";
     try {
-      expect(lumiHome().endsWith("/.lumi")).toBe(true);
+      expect(lumiHome()).toBe(join(homedir(), ".lumi"));
     } finally {
       if (prev === undefined) delete process.env.LUMI_HOME; else process.env.LUMI_HOME = prev;
     }

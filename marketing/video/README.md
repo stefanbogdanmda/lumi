@@ -19,7 +19,7 @@ whole thing renders from this repo.
 >   a motion kit in `ui.tsx`, soft `TransitionSeries` scene transitions). Emoji UI
 >   removed in favor of the spark + monoline glyphs.
 > - **Fixed install command.** The CTA now shows the real two-step command:
->   `/plugin marketplace add stefanbogdanmda/digitalproduct` then
+>   `/plugin marketplace add stefanbogdanmda/lumi` then
 >   `/plugin install lumi@lumi` (v1 showed the wrong `/plugin install lumi`).
 >
 > Re-render anytime with `npm run render` / `npm run render:vertical` (below).
@@ -68,7 +68,7 @@ the beat. The full v2 creative spec is in [`V2-BRIEF.md`](V2-BRIEF.md).
 | 8–11s | **Reveal** | The spark blooms into Lumi's mark + wordmark — "your mini-teacher, right inside the AI." |
 | 11–21s | **Does it for everything / Remembers** | New words (`migration`, `API`, `race condition`) light up on the beat across terminal · mobile · VS Code; learned words fly into a glossary shelf and a repeat term stays quiet. |
 | 21–26s | **The turn** | Three kinetic lines punch in on the beat: "Learn as you build." · "Taught once. Yours forever." · "Build with confidence." |
-| 26–30s | **CTA** | Lockup, tagline "Understand what you ship.", and the real two-step install command — `/plugin marketplace add stefanbogdanmda/digitalproduct` then `/plugin install lumi@lumi`. |
+| 26–30s | **CTA** | Lockup, tagline "Understand what you ship.", and the real two-step install command — `/plugin marketplace add stefanbogdanmda/lumi` then `/plugin install lumi@lumi`. |
 
 ## Music sync
 

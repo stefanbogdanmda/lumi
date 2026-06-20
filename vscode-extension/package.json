@@ -10,7 +10,7 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "publisher": "lumi-app",
-  "repository": { "type": "git", "url": "https://github.com/stefanbogdanmda/digitalproduct" },
+  "repository": { "type": "git", "url": "https://github.com/stefanbogdanmda/lumi" },
   "license": "MIT",
   "contributes": {
     "views": {
