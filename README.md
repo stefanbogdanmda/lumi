@@ -195,15 +195,9 @@ the web overlay, the VS Code panel, and the CLI, and is fully testable offline.
 
 ```mermaid
 flowchart TD
-    Hook["AI tool 'after response' hook<br/>Claude Code · Cursor · Codex · Gemini · Copilot"] --> Core
-    subgraph Core["@lumi/core — UI-agnostic, zero runtime deps"]
-        Detect["Concept detector<br/>136-concept dictionary"]
-        Gen["Lesson generator<br/>tool's own model · offline fallback"]
-        Profile["Learning profile<br/>~/.lumi · atomic writes"]
-        Risk["Security lens<br/>check / audit A–F"]
-    end
-    Core --> Inline["Inline lesson<br/>(inside the AI reply)"]
-    Core --> Overlay["Web overlay<br/>lumi serve"]
+    Hook["AI tool hook (Claude Code, Cursor, Codex, Gemini, Copilot)"] --> Core["@lumi/core: UI-agnostic engine, zero runtime deps<br/>concept detector, lesson generator, profile, security lens"]
+    Core --> Inline["Inline lesson (in the AI reply)"]
+    Core --> Overlay["Web overlay (lumi serve)"]
     Core --> VSCode["VS Code panel"]
     Core --> CLI["lumi CLI"]
 ```
