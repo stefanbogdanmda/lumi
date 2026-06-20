@@ -43,4 +43,4 @@ This release rolls up three internal development milestones:
 - The live VS Code webview and real `claude` CLI generation are best verified on a real
   machine.
 
-[0.1.0]: https://github.com/stefanbogdanmda/digitalproduct/releases/tag/v0.1.0
+[0.1.0]: https://github.com/stefanbogdanmda/lumi/releases/tag/v0.1.0

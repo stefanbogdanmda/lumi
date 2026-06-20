@@ -4,11 +4,10 @@
   "description": "Inline mini-lessons for Codex: teaches each new tech concept once, in plain English, as you work.",
   "author": {
     "name": "Stefan Bogdan",
-    "email": "removed@example.com",
     "url": "https://github.com/stefanbogdanmda"
   },
-  "homepage": "https://github.com/stefanbogdanmda/digitalproduct",
-  "repository": "https://github.com/stefanbogdanmda/digitalproduct",
+  "homepage": "https://github.com/stefanbogdanmda/lumi",
+  "repository": "https://github.com/stefanbogdanmda/lumi",
   "license": "MIT",
   "keywords": [
     "learning",
@@ -34,9 +33,7 @@
       "Help me understand what you just did.",
       "Explain this to me like I'm not a developer."
     ],
-    "websiteURL": "https://github.com/stefanbogdanmda/digitalproduct",
-    "privacyPolicyURL": "https://github.com/stefanbogdanmda/digitalproduct/blob/main/docs/privacy.md",
-    "termsOfServiceURL": "https://github.com/stefanbogdanmda/digitalproduct/blob/main/docs/terms.md",
+    "websiteURL": "https://github.com/stefanbogdanmda/lumi",
     "brandColor": "#a78bfa"
   }
 }

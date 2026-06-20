@@ -37,7 +37,7 @@ gets brighter as the user understands more.
 - **Remembers:** "Learned once. **Never repeated.**"
 - **The turn (3 lines):** "Learn as you build." → "Taught once. Yours forever." → "Build with confidence."
 - **CTA:** tagline **"Understand what you ship."** + one line "Free on your own Claude plan · mobile + VS Code" + the **REAL** command (two lines, mono):
-  `/plugin marketplace add stefanbogdanmda/digitalproduct`
+  `/plugin marketplace add stefanbogdanmda/lumi`
   `/plugin install lumi@lumi`
 - ⚠️ **Bug to fix:** current `CTA.tsx` shows the WRONG command `/plugin install lumi`. Replace with the real two-step above.
 - Accuracy: 92-concept dictionary (don't imply infinite); learner-voice = hopeful (no security-fear framing); only real concepts shown.

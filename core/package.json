@@ -6,9 +6,9 @@
     "learn to code", "AI", "tutor", "non-technical", "vibe coding", "explain code",
     "security", "Claude", "Codex", "Cursor", "Copilot", "Gemini", "spaced repetition", "CLI"
   ],
-  "homepage": "https://github.com/stefanbogdanmda/digitalproduct#readme",
-  "repository": { "type": "git", "url": "git+https://github.com/stefanbogdanmda/digitalproduct.git", "directory": "core" },
-  "bugs": { "url": "https://github.com/stefanbogdanmda/digitalproduct/issues" },
+  "homepage": "https://github.com/stefanbogdanmda/lumi#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/stefanbogdanmda/lumi.git", "directory": "core" },
+  "bugs": { "url": "https://github.com/stefanbogdanmda/lumi/issues" },
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

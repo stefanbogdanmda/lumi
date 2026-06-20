@@ -16,7 +16,7 @@ import { FadeUp, Bloom } from "../components/ui";
 // typed on with a glow pulse, then holds dead-still ~20f (readable thumbnail).
 //
 // REAL install command (two lines, mono):
-//   /plugin marketplace add stefanbogdanmda/digitalproduct
+//   /plugin marketplace add stefanbogdanmda/lumi
 //   /plugin install lumi@lumi
 
 // Character-by-character reveal at `speed` chars/frame from `startFrame`.
@@ -43,7 +43,7 @@ const Cursor: React.FC<{ visible: boolean; frame: number }> = ({ visible, frame 
   );
 };
 
-const CMD1 = "/plugin marketplace add stefanbogdanmda/digitalproduct";
+const CMD1 = "/plugin marketplace add stefanbogdanmda/lumi";
 const CMD2 = "/plugin install lumi@lumi";
 
 // Speed in chars/frame — retimed so both lines finish by local f48 (~f62 worst-case),
@@ -198,7 +198,7 @@ export const CTA: React.FC = () => {
               minWidth: portrait ? 500 : 680,
             }}
           >
-            {/* Line 1: /plugin marketplace add stefanbogdanmda/digitalproduct */}
+            {/* Line 1: /plugin marketplace add stefanbogdanmda/lumi */}
             <div>
               <span style={{ color: COLORS.glow }}>
                 {cmd1Text.startsWith("/plugin") ? "/plugin" : cmd1Text}

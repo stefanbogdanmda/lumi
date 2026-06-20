@@ -28,6 +28,6 @@ lumi upgrade            # what's in Lumi Pro
 
 Works with **Claude Code, Codex, Cursor, Gemini, Copilot, and OpenCode**, across the CLI, a web overlay, a VS Code panel, and inline on mobile.
 
-Full docs, surfaces, and the complete command list: **[github.com/stefanbogdanmda/digitalproduct](https://github.com/stefanbogdanmda/digitalproduct)**.
+Full docs, surfaces, and the complete command list: **[github.com/stefanbogdanmda/lumi](https://github.com/stefanbogdanmda/lumi)**.
 
 MIT licensed.
