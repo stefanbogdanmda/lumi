@@ -4,6 +4,24 @@ All notable changes to Lumi are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **"Related" trail after `lumi explain`.** A successful explanation now ends with 2–3
+  sibling concepts from the same topic the learner hasn't met yet (most important first),
+  so there's always an obvious next thing to learn — closing the explore → learn → explore
+  loop alongside `lumi topics` and the "Did you mean?" suggestions.
+- **`lumi topics` — browse everything Lumi can teach.** The glossary only shows what
+  you've *already* learned, so a new user had no way to see the menu. `lumi topics`
+  now maps the full 136-concept dictionary by category with counts and examples, and
+  `lumi topics <category>` drills into one, ticking off what you already know. Surfaced
+  from onboarding and from `lumi explain` when a term isn't recognized.
+- **"Did you mean?" suggestions for `lumi explain`.** When a term doesn't match a
+  concept exactly, Lumi now offers the closest matches instead of dead-ending. It
+  tolerates typos and plurals (e.g. `lumi explain "comit"` → *Did you mean "Git
+  commit"?*), so beginners who don't know the exact jargon still get pointed
+  somewhere useful. High-confidence only, to avoid noisy guesses.
+
 ## [0.1.0] - 2026-06-14
 
 First public release. Lumi is a friendly mini-teacher for Claude Code: it watches the tech

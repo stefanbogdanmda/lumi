@@ -87,6 +87,57 @@ export function offlinePolish(rawIdea: string, opts: PolishOpts = {}): string {
 }
 
 /**
+ * PURE — gentle, deterministic coaching on what a *raw* idea was missing, so the
+ * learner writes sharper prompts over time instead of leaning on the polisher
+ * forever. Only fires on short-to-medium ideas (a long, detailed idea needs no
+ * tips), checks the highest-signal gaps first, and is capped so it never nags.
+ */
+export function promptTips(rawIdea: string): string[] {
+  const idea = rawIdea.trim();
+  const lower = idea.toLowerCase();
+  const wordCount = idea.split(/\s+/).filter(Boolean).length;
+  // A detailed idea (or an empty one) needs no coaching.
+  if (wordCount === 0 || wordCount >= 25) return [];
+
+  const tips: string[] = [];
+
+  // 1. Too vague — the most common beginner mistake.
+  if (wordCount < 6) {
+    tips.push(
+      "Add a sentence of detail — what should it do, and for whom? The more specific you are, the closer the AI gets on the first try.",
+    );
+  }
+
+  // 2. No definition of "done".
+  const doneWords = /\b(should|must|so that|able to|test|verify|accept|success|when (it|the|done))\b/;
+  if (!doneWords.test(lower)) {
+    tips.push(
+      "Describe how you'll know it's working — one concrete example of success helps the AI aim at the right target.",
+    );
+  }
+
+  // 3. No platform / kind of thing.
+  const platformWords =
+    /\b(web ?site|web ?app|web ?page|app|mobile|ios|android|api|script|cli|command[- ]line|bot|extension|game|dashboard|landing page)\b/;
+  if (!platformWords.test(lower)) {
+    tips.push(
+      "Say what kind of thing it is — a website, a script, a mobile app — so the AI picks the right approach.",
+    );
+  }
+
+  // 4. No tech / language preference.
+  const techWords =
+    /\b(python|javascript|typescript|react|node|next\.?js|html|css|java|c\+\+|go|rust|sql|vue|svelte|tailwind|flask|django|express)\b/;
+  if (!techWords.test(lower)) {
+    tips.push(
+      "If you have a preference, name the language or tools (e.g. Python, React) — otherwise the AI will choose for you.",
+    );
+  }
+
+  return tips.slice(0, 2);
+}
+
+/**
  * Shells out to the source-routed CLI to polish a prompt.
  *
  * The class is named CliPolisher but exported as ClaudePolisher for
@@ -185,6 +236,13 @@ export async function runPrompt(
   out(DELIMITER_TOP);
   out(polished);
   out(DELIMITER_BOT);
+
+  const tips = promptTips(idea);
+  if (tips.length > 0) {
+    out("");
+    out("💡 To get even better results next time:");
+    for (const tip of tips) out(`  • ${tip}`);
+  }
 
   return 0;
 }

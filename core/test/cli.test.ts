@@ -104,6 +104,16 @@ describe("runCli", () => {
     expect(profile.listLearned().map((c) => c.id)).toContain("git-commit");
   });
 
+  it("explain shows a Related trail of sibling concepts", async () => {
+    const code = await runCli(["explain", "git commit"], {
+      home,
+      out: sink,
+      generator: new MockGenerator(),
+    });
+    expect(code).toBe(0);
+    expect(text()).toContain("Related:");
+  });
+
   it("explain with no term returns 1", async () => {
     const code = await runCli(["explain"], { home, out: sink, generator: new MockGenerator() });
     expect(code).toBe(1);
@@ -118,6 +128,49 @@ describe("runCli", () => {
     });
     expect(code).toBe(0);
     expect(text()).toContain("don't have a lesson");
+  });
+
+  it("topics lists all categories with counts", async () => {
+    const code = await runCli(["topics"], { home, out: sink });
+    expect(code).toBe(0);
+    expect(text()).toContain("What Lumi can teach you");
+    expect(text()).toContain("Security & safety");
+    expect(text()).toContain("Git & version control");
+  });
+
+  it("topics <category> lists concepts and marks learned ones", async () => {
+    seed("git-commit");
+    const code = await runCli(["topics", "git"], { home, out: sink });
+    expect(code).toBe(0);
+    expect(text()).toContain("Git & version control");
+    expect(text()).toContain("✓ Git commit");
+  });
+
+  it("topics with an unknown category returns 1 and points to the list", async () => {
+    const code = await runCli(["topics", "nonsense"], { home, out: sink });
+    expect(code).toBe(1);
+    expect(text()).toContain("lumi topics");
+  });
+
+  it("explain with an unrecognized term points to lumi topics", async () => {
+    const code = await runCli(["explain", "zzzzqqqq"], {
+      home,
+      out: sink,
+      generator: new MockGenerator(),
+    });
+    expect(code).toBe(0);
+    expect(text()).toContain("lumi topics");
+  });
+
+  it("explain suggests close concepts for a typo", async () => {
+    const code = await runCli(["explain", "comit"], {
+      home,
+      out: sink,
+      generator: new MockGenerator(),
+    });
+    expect(code).toBe(0);
+    expect(text()).toContain("Did you mean");
+    expect(text()).toContain("Git commit");
   });
 
   it("an unknown command returns 1 and prints help", async () => {

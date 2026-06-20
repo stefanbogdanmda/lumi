@@ -13,6 +13,8 @@ import { FallbackGenerator, ClaudeCliGenerator, CodexCliGenerator, GeminiCliGene
 import { CONCEPTS } from "./concepts";
 import { LessonGenerator } from "./types";
 import { extractSignals } from "./transcript";
+import { suggestConcepts } from "./detector";
+import { topicCategories, topicsInCategory, categoryLabel, relatedConcepts } from "./topics";
 import { appendEvent, lessonEvent } from "./feed";
 import { milestoneFor } from "./milestones";
 import { createOverlayServer } from "./server";
@@ -39,7 +41,7 @@ import { onboardingGuide } from "./onboarding";
 
 /** Read all of process stdin as a string; returns "" if nothing is piped (TTY). */
 export async function readStdin(stream: NodeJS.ReadableStream = process.stdin): Promise<string> {
-  if ((stream as any).isTTY) return "";
+  if ("isTTY" in stream && stream.isTTY) return "";
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   return Buffer.concat(chunks).toString("utf8");
@@ -76,6 +78,7 @@ Usage:
   lumi progress             Show how many concepts you've learned and your level
   lumi stats                Show learning stats: streak, topics, recent concepts
   lumi glossary             Print your personal glossary
+  lumi topics [<category>]  Browse everything Lumi can teach (or one category)
   lumi explain "<term>"     Explain a specific concept now
   lumi next                 Suggest what to build next — and why — for where you're at
   lumi prompt "<idea>"      Turn a rough idea into a clear, ready-to-paste prompt
@@ -163,6 +166,34 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
       out(renderGlossary(profile.listLearned()));
       return 0;
     }
+    case "topics": {
+      const learnedIds = profile.listLearned().map((c) => c.id);
+      const arg = argv.slice(1).join(" ").trim();
+      if (arg) {
+        const inCat = topicsInCategory(arg, learnedIds);
+        if (!inCat) {
+          out(`No topic called "${arg}". Run \`lumi topics\` to see the list.`);
+          return 1;
+        }
+        const known = inCat.filter((c) => c.learned).length;
+        out(`${categoryLabel(arg.toLowerCase())} — ${inCat.length} concept${inCat.length === 1 ? "" : "s"}${known > 0 ? ` (${known} learned)` : ""}`);
+        for (const c of inCat) out(`  ${c.learned ? "✓" : " "} ${c.label}`);
+        out("");
+        out(`Learn one now:  lumi explain "${inCat[0].label}"`);
+        return 0;
+      }
+      const cats = topicCategories();
+      const total = cats.reduce((n, c) => n + c.count, 0);
+      out(`📚 What Lumi can teach you — ${total} concepts across ${cats.length} topics`);
+      out("");
+      for (const c of cats) {
+        out(`  ${c.label} (${c.count}) — e.g. ${c.examples.join(", ")}`);
+      }
+      out("");
+      out("Drill into one:  lumi topics security");
+      out('Learn one now:   lumi explain "API"');
+      return 0;
+    }
     case "review": {
       const due = dueForReview(profile.listLearned());
       if (due.length === 0) {
@@ -183,14 +214,28 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
       const cache = new JsonFileCache(join(home, "cache.json"));
       const generator = deps.generator ?? new FallbackGenerator(new ClaudeCliGenerator(), new MockGenerator());
       const lumi = new Lumi({ profile, cache, generator });
+      // Snapshot what's already learned before explain() marks this term learned,
+      // so the "related" trail reflects genuine prior knowledge.
+      const learnedBefore = profile.listLearned().map((c) => c.id);
       const lesson = await lumi.explain(term);
       if (!lesson) {
         out(`I don't have a lesson for "${term}" yet.`);
+        const suggestions = suggestConcepts(term);
+        if (suggestions.length > 0) {
+          out(`Did you mean: ${suggestions.map((s) => `"${s.label}"`).join(", ")}?`);
+          out(`Try:  lumi explain "${suggestions[0].label}"`);
+        } else {
+          out("Browse everything Lumi can teach:  lumi topics");
+        }
         return 0;
       }
       out(`🪄 ${lesson.title}\n\n${lesson.plainExplanation}\nWhy it matters: ${lesson.whyItMatters}`);
       const concept = CONCEPTS.find((c) => c.id === lesson.conceptId);
       if (concept) out(`Learn more: ${learnMoreUrl(concept)}`);
+      const related = relatedConcepts(lesson.conceptId, learnedBefore);
+      if (related.length > 0) {
+        out(`Related: ${related.map((r) => `"${r.label}"`).join(", ")}`);
+      }
       return 0;
     }
     case "next": {

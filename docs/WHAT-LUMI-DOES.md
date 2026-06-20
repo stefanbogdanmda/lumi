@@ -25,7 +25,7 @@ couldn't check.
 ## How it does it (the loop)
 1. **Watches the work.** After the AI responds, Lumi reads both what it *says* (its reply) and what
    it *does* (the commands it runs, the files it writes), via your tool's "after the AI responds" hook.
-2. **Detects concepts.** A **129-concept dictionary** — including a deep **security** category —
+2. **Detects concepts.** A **136-concept dictionary** — including a deep **security** category —
    spots tech terms (`git commit`, `environment variable`, `API key`, `missing access control`, and
    so on) with anchored matching, so ordinary English doesn't trigger false lessons.
 3. **Only teaches what's new.** It checks each concept against your saved learning profile and skips
