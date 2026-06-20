@@ -14,3 +14,7 @@ lumi-license-private.pem
 
 # Local test artefacts
 .lumi-test/
+
+# Rendered marketing media (kept out of the code repo; render from marketing/video source)
+marketing/video/examples/
+marketing/video/public/audio/

@@ -21,6 +21,7 @@ export function onboardingGuide(): string {
     "  3. See your lessons:     lumi serve     (opens the web overlay)",
     "",
     "Try one right now:",
+    "  lumi topics             Browse everything Lumi can teach",
     '  lumi explain "api"      Learn a concept on the spot',
     "  lumi check              Paste your AI's output to spot risky code",
     "  lumi path               See your learning path and what's next",

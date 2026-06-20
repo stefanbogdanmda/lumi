@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectConcepts, scoreConcepts, resolveConcept } from "../src/detector";
+import { detectConcepts, scoreConcepts, resolveConcept, suggestConcepts } from "../src/detector";
 
 describe("detectConcepts", () => {
   it("detects a git commit from CLI output", () => {
@@ -331,5 +331,36 @@ describe("new concepts v1.4 false positives", () => {
   it("still detects real CDN usage after anchoring", () => {
     expect(detectConcepts("serve static assets from a CDN")).toContain("cdn");
     expect(detectConcepts("a content delivery network")).toContain("cdn");
+  });
+});
+
+describe("suggestConcepts", () => {
+  it("suggests the right concept for a typo", () => {
+    const ids = suggestConcepts("comit").map((s) => s.id);
+    expect(ids).toContain("git-commit");
+  });
+
+  it("tolerates plurals and related wording", () => {
+    expect(suggestConcepts("containers").map((s) => s.id)).toContain("docker");
+    expect(suggestConcepts("databse").map((s) => s.id)).toContain("database");
+  });
+
+  it("returns no suggestions for gibberish", () => {
+    expect(suggestConcepts("zzzzzqqq")).toEqual([]);
+  });
+
+  it("returns nothing for very short terms", () => {
+    expect(suggestConcepts("a")).toEqual([]);
+    expect(suggestConcepts("ab")).toEqual([]);
+  });
+
+  it("respects the limit and sorts strongest first", () => {
+    const out = suggestConcepts("commit", undefined, 2);
+    expect(out.length).toBeLessThanOrEqual(2);
+    if (out.length > 1) expect(out[0].score).toBeGreaterThanOrEqual(out[1].score);
+  });
+
+  it("does not suggest for an ordinary non-tech phrase", () => {
+    expect(suggestConcepts("definitely not a concept")).toEqual([]);
   });
 });

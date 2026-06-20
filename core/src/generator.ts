@@ -59,7 +59,7 @@ export function parseLessonJson(raw: string, concept: Concept): Lesson {
   const jsonText = fenced ? fenced[1]
     : (start !== -1 && end > start ? raw.slice(start, end + 1)
       : start !== -1 ? raw.slice(start) : "");
-  let obj: any;
+  let obj: Record<string, unknown>;
   try {
     obj = JSON.parse(jsonText.trim());
   } catch {

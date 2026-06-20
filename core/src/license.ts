@@ -5,14 +5,14 @@ import { atomicWriteFileSync } from "./fsutil";
 import { lumiHome } from "./paths";
 
 // ---------------------------------------------------------------------------
-// Embedded public key
-// PLACEHOLDER — replace before production. No one holds its matching private
-// half, so every license verifies as free (fail-safe; any parse/verify error is
-// caught and treated as free) until the founder swaps in their own key.
-// Generate a real keypair with: node core/scripts/make-license-keypair.mjs
+// Embedded license public key (Ed25519).
+// Pro license keys are signed offline with the matching private key (kept out
+// of this repo) and verified against this public key. Any missing, malformed,
+// forged, or expired key is caught below and safely treated as the free tier.
+// Regenerate with: node core/scripts/make-license-keypair.mjs
 // ---------------------------------------------------------------------------
 const LUMI_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAPlaceholderPublicKeyDataHereReplaceBeforeProduction=
+MCowBQYDK2VwAyEAcStxMQBGVVfbYCu1elMuOakHczoJMeQlHRN24tBk3Os=
 -----END PUBLIC KEY-----`;
 
 // ---------------------------------------------------------------------------

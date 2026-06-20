@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build lumi extension",
+      "detail": "Compile @lumi/core and bundle the extension before launching",
+      "type": "shell",
+      "command": "npm run build --workspace core && npm run bundle --workspace vscode-extension",
+      "options": { "cwd": "${workspaceFolder}/.." },
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    }
+  ]
+}

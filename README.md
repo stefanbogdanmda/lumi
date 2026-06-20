@@ -1,5 +1,10 @@
 # Lumi — your AI coding mini-teacher
 
+[![CI](https://github.com/stefanbogdanmda/lumi/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanbogdanmda/lumi/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Tests](https://img.shields.io/badge/tests-1137%20passing-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
+
 **Build with AI, and actually understand what you shipped.** Lumi is a friendly mini-teacher
 that rides *inside* the AI coding tool you already use. The moment the AI does something
 technical, Lumi teaches you the concept behind it in plain English — then **remembers** it
@@ -33,7 +38,7 @@ one that does all of this, unprompted, on *your real work*:
 
 ### Learn — a lesson the moment a concept appears
 - Watches both what the AI **says** and what it **does** (commands run, files written).
-- Detects new concepts from a **129-concept dictionary** (including a deep security category),
+- Detects new concepts from a **136-concept dictionary** (including a deep security category),
   with anchored matching so ordinary English doesn't trigger false lessons.
 - Writes a short, jargon-free, analogy-led lesson that **adapts to your level**
   (beginner → growing → confident). Teaches **at most 2 concepts per turn** so you're never flooded.
@@ -128,6 +133,7 @@ For exactly how it works under the hood: **[`docs/WHAT-LUMI-DOES.md`](docs/WHAT-
 | `lumi progress` | How many concepts you've learned, and your level |
 | `lumi stats` | Streak, topics, recent concepts, badges |
 | `lumi glossary` | Print your personal glossary |
+| `lumi topics [<category>]` | Browse every concept Lumi can teach, by category |
 | `lumi explain "<term>"` | Explain a specific concept now |
 | `lumi next` | Suggest what to build next — and why — for where you're at |
 | `lumi prompt "<idea>"` | Turn a rough idea into a clear, ready-to-paste prompt |
@@ -180,6 +186,27 @@ OpenCode.
 > Marketplace/directory publishing is in progress — see the docs for the current state.
 
 ---
+
+## Architecture
+
+Lumi's core is a single UI-agnostic engine that every surface consumes through injected interfaces
+(`LessonGenerator`, `LearningProfile`, `LessonCache`) — so the same logic powers the inline plugin,
+the web overlay, the VS Code panel, and the CLI, and is fully testable offline.
+
+```mermaid
+flowchart TD
+    Hook["AI tool 'after response' hook<br/>Claude Code · Cursor · Codex · Gemini · Copilot"] --> Core
+    subgraph Core["@lumi/core — UI-agnostic, zero runtime deps"]
+        Detect["Concept detector<br/>136-concept dictionary"]
+        Gen["Lesson generator<br/>tool's own model · offline fallback"]
+        Profile["Learning profile<br/>~/.lumi · atomic writes"]
+        Risk["Security lens<br/>check / audit A–F"]
+    end
+    Core --> Inline["Inline lesson<br/>(inside the AI reply)"]
+    Core --> Overlay["Web overlay<br/>lumi serve"]
+    Core --> VSCode["VS Code panel"]
+    Core --> CLI["lumi CLI"]
+```
 
 ## For developers
 
