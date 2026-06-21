@@ -25,7 +25,9 @@ export const CONCEPTS: Concept[] = [
   { id: "dependency", label: "Dependency", category: "node",
     matchers: [/\bdependenc(y|ies)\b/i, /\bdevDependencies\b/] },
   { id: "env-var", label: "Environment variable", category: "shell",
-    matchers: [/\benvironment\s+variable/i, /\bprocess\.env\b/, /\b\.env\b/, /\benv\s+var/i] },
+    // `\b\.env\b` never matched a space-preceded ".env" (no word boundary before a dot),
+    // missing the very common "add a .env file". `\.env\b` catches .env / .env.local etc.
+    matchers: [/\benvironment\s+variable/i, /\bprocess\.env\b/, /\.env\b/, /\benv\s+var/i] },
   { id: "cli", label: "Command-line interface (CLI)", category: "shell",
     matchers: [/\bcommand[- ]line/i, /\bCLI\b/, /\bterminal\s+command/i] },
   { id: "shell-script", label: "Shell script", category: "shell",
@@ -33,7 +35,7 @@ export const CONCEPTS: Concept[] = [
   { id: "ssh", label: "SSH / secure shell", category: "shell",
     matchers: [/\bssh\b/i, /\bSSH\s+key/i] },
   { id: "api", label: "API", category: "web",
-    matchers: [/\bAPI\b.{0,25}\b(call|request|endpoint|key|response|REST)/i, /\bREST\s+API/i, /\bendpoint\b/i] },
+    matchers: [/\bAPI\b.{0,25}\b(call|request|endpoint|key|response|REST|returns?|data|json|fetch|serves?)/i, /\bREST\s+API/i, /\bendpoint\b/i] },
   { id: "http-status", label: "HTTP status code", category: "web",
     matchers: [/\bHTTP\b.{0,8}\b\d{3}\b/i, /\bstatus\s+code\b/i, /\b(404|500|403|401)\b.{0,15}\b(error|not\s+found|server|unauthorized|forbidden)/i] },
   { id: "http-request", label: "HTTP request", category: "web",
@@ -53,7 +55,15 @@ export const CONCEPTS: Concept[] = [
   { id: "docker", label: "Docker container", category: "devops",
     matchers: [/\bDocker\b/, /\bcontainer\b.{0,20}\b(docker|image|run|build)/i, /\bDockerfile\b/] },
   { id: "deploy", label: "Deploying", category: "devops",
-    matchers: [/\bdeploy(ed|ing|ment)?\b/i, /\bproduction\s+server/i] },
+    // Anchored to a software-deploy context so "deploy the team / troops / resources"
+    // (ordinary English) no longer triggers a lesson.
+    matchers: [
+      /\bdeploy(ed|ing|ment)?\b.{0,30}\b(app|application|site|website|web\s*app|server|production|staging|cloud|host(ing)?|build|release|code|container|service|api|function|vercel|netlify|heroku|aws|azure|render)\b/i,
+      /\b(app|application|site|website|web\s*app|code|build|release|container|service|frontend|backend)\b.{0,30}\bdeploy(ed|ing|ment)?\b/i,
+      /\bdeploy(ing)?\s+to\s+(production|staging|prod|the\s+(server|cloud)|vercel|netlify|heroku|aws)\b/i,
+      /\bproduction\s+server\b/i,
+      /\bdeployment\s+(pipeline|process|config|target|environment|url)\b/i,
+    ] },
   { id: "ci", label: "Continuous Integration (CI)", category: "devops",
     matchers: [/\bCI\b.{0,15}\b(pipeline|build|run|workflow|test)/i, /\bGitHub\s+Actions/i, /\bcontinuous\s+integration/i] },
   { id: "compile", label: "Compiling code", category: "build",
@@ -73,7 +83,12 @@ export const CONCEPTS: Concept[] = [
   { id: "assertion", label: "Test assertion", category: "testing", priority: 1,
     matchers: [/\bassert(ion|s|ed|ing)?\b.{0,20}\b(expect|equal|fail|pass|throw|true|false|value|result)/i, /\bexpect\b.{0,15}\b(toBe|toEqual|toContain|toThrow|toMatch|toHaveLength|toBeNull|toBeTruthy|toBeFalsy)/i] },
   { id: "function", label: "Function", category: "programming",
-    matchers: [/\bfunction\b.{0,25}\b(call|return|parameter|argument|define|javascript|typescript|python|method)/i, /\b(JavaScript|TypeScript|Python)\s+function/i] },
+    matchers: [
+      /\bfunction\b.{0,25}\b(call|return|parameter|argument|define|javascript|typescript|python|method)/i,
+      /\b(JavaScript|TypeScript|Python)\s+function/i,
+      // reverse order: "a parameter/argument/return value … to the function"
+      /\b(parameters?|arguments?|return\s+value)\b.{0,20}\bfunction\b/i,
+    ] },
   { id: "async", label: "Asynchronous code", category: "programming",
     matchers: [/\basync\/await\b/i, /\basync\b.{0,20}\b(function|code|operation|call|javascript|promise|task|method)/i, /\bawait\b.{0,20}\b(promise|async|function|call|result|response|fetch)/i, /\bpromise\b.{0,20}\b(resolve|reject|async|await|then)/i] },
   { id: "regex", label: "Regular expression", category: "programming",
@@ -124,7 +139,7 @@ export const CONCEPTS: Concept[] = [
     matchers: [/\bsemantic\s+versioning/i, /\bsemver\b/i, /\bmajor\.minor\.patch/i] },
   { id: "caching", label: "Caching", category: "web", priority: 2,
     matchers: [
-      /\bcach(e|ing|ed)\b.{0,20}\b(store|memory|invalidat|clear|browser|layer|key|server)/i,
+      /\bcach(e|ing|ed)\b.{0,25}\b(store|memory|invalidat|clear|browser|layer|key|server|response|result|data|api|query|performance|speed|faster|fast|expensive)/i,
       /\bcache\s+(hit|miss)\s+rate/i,
     ] },
   { id: "logging", label: "Logging", category: "programming", priority: 1,
@@ -184,6 +199,8 @@ export const CONCEPTS: Concept[] = [
   { id: "array", label: "Array", category: "programming", priority: 1,
     matchers: [
       /\barray\b.{0,15}\b(index|element|list|item|length|push|bounds)/i,
+      // reverse order: "every item / the elements / the index … of the array"
+      /\b(items?|elements?|indices|index|iterate)\b.{0,15}\barray\b/i,
     ] },
   { id: "loop", label: "Loop / iteration", category: "programming", priority: 1,
     matchers: [
@@ -329,6 +346,13 @@ export const CONCEPTS: Concept[] = [
       /\bpassword\s*=\s*["'][^"']{4,}["']/i,
       // AWS_SECRET_ACCESS_KEY with literal value
       /\bAWS_SECRET_ACCESS_KEY\s*=\s*["']?[A-Za-z0-9+/]{10,}/i,
+      // prose: "the API key is hardcoded" / "hardcoded secret" (browser-builder users
+      // describe this in plain English, not code). Anchored to a secret-ish noun so
+      // "hardcoded the timeout / keyboard shortcut" does not fire. The negative
+      // lookbehind keeps preventive phrasing ("prevent/avoid/never hardcode secrets")
+      // from raising a false alarm.
+      /(?<!\b(?:prevent|prevents|prevented|avoid|avoids|stop|block|never|without|no)\s)\bhard[- ]?cod(e|ed|ing)\b.{0,30}\b(secret|password|passwd|token|credential|api[ _-]?key|access[ _-]?key|private[ _-]?key)s?\b/i,
+      /(?<!\b(?:prevent|prevents|prevented|avoid|avoids|stop|block|never|without|no)\s)\b(secret|password|passwd|token|credential|api[ _-]?key|access[ _-]?key|private[ _-]?key)s?\b.{0,30}\bhard[- ]?cod(e|ed|ing)\b/i,
     ] },
   { id: "secret-in-frontend", label: "Secret exposed in frontend / client bundle", category: "security", priority: 4,
     matchers: [
@@ -339,10 +363,10 @@ export const CONCEPTS: Concept[] = [
     ] },
   { id: "missing-auth", label: "Missing authentication on endpoint", category: "security", priority: 4,
     matchers: [
-      /\bno\s+auth(entication)?\b.{0,30}\b(route|endpoint|middleware|required|check)/i,
-      /\b(route|endpoint|handler)\b.{0,30}\bno\s+auth(entication)?/i,
-      /\bunauthenticated\b.{0,30}\b(endpoint|route|access|request)/i,
-      /\b(skip|bypass|missing|without|lacks?)\b.{0,20}\bauth(entication|orization)?\b.{0,20}\b(middleware|check|guard|route|endpoint)/i,
+      /\bno\s+auth(entication)?\b.{0,30}\b(routes?|endpoints?|middleware|required|check)/i,
+      /\b(routes?|endpoints?|handlers?)\b.{0,30}\bno\s+auth(entication)?/i,
+      /\bunauthenticated\b.{0,30}\b(endpoints?|routes?|access|requests?)/i,
+      /\b(skip|bypass|missing|without|lacks?)\b.{0,20}\bauth(entication|orization)?\b.{0,20}\b(middleware|check|guard|routes?|endpoints?)/i,
     ] },
   { id: "missing-input-validation", label: "Missing input validation / sanitization", category: "security", priority: 3,
     matchers: [
@@ -381,10 +405,10 @@ export const CONCEPTS: Concept[] = [
     ] },
   { id: "weak-password-storage", label: "Weak password storage (plaintext / MD5)", category: "security", priority: 4,
     matchers: [
-      /\bpassword\b.{0,30}\b(plain\s*text|plaintext|not\s+hashed?|without\s+hash)/i,
-      /\bstore\b.{0,30}\bpassword\b.{0,30}\b(plain|directly|as.is|without)/i,
+      /\bpasswords?\b.{0,30}\b(plain\s*text|plaintext|not\s+hashed?|without\s+hash)/i,
+      /\bstore\b.{0,30}\bpasswords?\b.{0,30}\b(plain|directly|as.is|without)/i,
       /\bmd5\b.{0,25}\bpassword/i,
-      /\bpassword\b.{0,25}\bmd5\b/i,
+      /\bpasswords?\b.{0,25}\bmd5\b/i,
       /\bsha\s*1\b.{0,25}\bpassword/i,
     ] },
   { id: "eval-injection", label: "eval() / code injection risk", category: "security", priority: 4,
@@ -511,9 +535,9 @@ export const CONCEPTS: Concept[] = [
       // print / stdout with secret term (Python / generic)
       /\b(print|stdout)\s*\(.{0,30}\b(password|token|secret|api[_-]?key)\b/i,
       // code-oriented: sensitive term in logs / written to log — requires "to (the)? log(s)"
-      /\b(password|auth\s+token|api\s+key|access\s+token|secret|private\s+key)\b.{0,30}\b(log(ged|ging)?|written\s+to\s+(the\s+)?log)/i,
+      /\b(passwords?|auth\s+tokens?|api\s+keys?|access\s+tokens?|secrets?|private\s+keys?)\b.{0,30}\b(log(ged|ging)?|written\s+to\s+(the\s+)?log)/i,
       // "logging the <secret>" — needs code-logging anchor: console/logger/log.*/stdout
-      /\b(console|logger|stdout)\b.{0,20}\b(password|auth\s+token|api\s+key|access\s+token|secret|private\s+key)\b/i,
+      /\b(console|logger|stdout)\b.{0,20}\b(passwords?|auth\s+tokens?|api\s+keys?|access\s+tokens?|secrets?|private\s+keys?)\b/i,
       // code-ish "logging the auth token" — require "auth token" / "api key" (not bare "password") so diary prose doesn't match
       /\b(logging|logged)\b.{0,20}\b(auth\s+token|api\s+key|access\s+token|private\s+key)\b/i,
       // PII logged — requires a code-ish logging term (logging/logged + stdout/console/logger, or a PII term + to stdout)
@@ -532,6 +556,10 @@ export const CONCEPTS: Concept[] = [
       // spreading entire request body into a model/create call
       /\.\.\.\s*req\.body\b/,
       /\bObject\.assign\s*\(.{0,20}req\.body/i,
+      // passing the whole request body straight into an ORM persistence call
+      // (User.create(req.body), Model.update(req.body), new User(req.body), …)
+      /\b(create|update|save|build|insert|bulkCreate|insertMany|updateOne|updateMany|findOneAndUpdate)\s*\(\s*req\.body\s*\)/i,
+      /\bnew\s+[A-Z]\w*\s*\(\s*req\.body\s*\)/,
       // can overwrite / set admin / privileged fields via mass assignment framing
       /\bmass[- ]assign\b/i,
     ] },
@@ -544,6 +572,10 @@ export const CONCEPTS: Concept[] = [
       // debug mode enabled on the production server
       /\bdebug\s+mode\b.{0,30}\b(enabled?|on|still|left\s+on)\b.{0,30}\bprod(uction)?\b/i,
       /\bprod(uction)?\b.{0,30}\bdebug\s+mode\b.{0,30}\b(enabled?|on|still)/i,
+      // Node-specific: NODE_ENV left at development on a production server (requires
+      // prod context, so safe local "NODE_ENV=development" does not fire)
+      /\bNODE_ENV\s*[=:]\s*["']?(development|dev)["']?\b.{0,45}\bprod(uction)?\b/i,
+      /\bprod(uction)?\b.{0,45}\bNODE_ENV\s*[=:]\s*["']?(development|dev)["']?/i,
       // stack traces exposed to users in production
       /\bstack\s+trac(e|es)\b.{0,30}\bexposed?\b.{0,30}\b(user|prod|public|end\s*user)/i,
       /\bexposed?\b.{0,30}\bstack\s+trac(e|es)\b.{0,30}\b(user|prod|public)/i,
@@ -567,6 +599,9 @@ export const CONCEPTS: Concept[] = [
       // alg: none / algorithm: none in JWT context (quotes around alg key are common in JSON)
       /["']?alg["']?\s*[=:]\s*["']none["']/i,
       /\balgorithm\s*[=:]\s*["']none["']/i,
+      // jsonwebtoken-style options: algorithms: ["none"] (only when "none" is in the array;
+      // the safe algorithms: ["HS256"] must NOT match)
+      /\balgorithms?\s*[=:]\s*\[[^\]]*["']none["'][^\]]*\]/i,
       // JWT(s) without signature verification — JWTs (plural) is common
       // Note: no trailing \b after stems like "verif" since the word continues (verifying, verified, verification)
       /\bJWTs?\b.{0,50}(without\s+verif\w*|signature\s+not\s+verif\w*|not\s+verif(ied|ying|ication)|bypass\b|skip(ped|ping)?)\b/i,
@@ -578,30 +613,35 @@ export const CONCEPTS: Concept[] = [
   { id: "insecure-cookie", label: "Insecure cookie (missing httpOnly/Secure/sameSite)", category: "security", priority: 3,
     matchers: [
       // missing security flag near cookie
-      /\b(auth|session|login)\s+cookie\b.{0,40}\b(without|missing|no|lacks?)\b.{0,20}\b(httpOnly|http[- ]only|Secure|sameSite|same[- ]site)\b/i,
-      /\bcookie\b.{0,30}\b(without|missing|no|lacks?)\b.{0,20}\b(httpOnly|http[- ]only|Secure|sameSite|same[- ]site)\b/i,
+      /\b(auth|session|login)\s+cookies?\b.{0,40}\b(without|missing|no|lacks?)\b.{0,20}\b(httpOnly|http[- ]only|Secure|sameSite|same[- ]site)\b/i,
+      /\bcookies?\b.{0,30}\b(without|missing|no|lacks?)\b.{0,20}\b(httpOnly|http[- ]only|Secure|sameSite|same[- ]site)\b/i,
       // reversed: flag name then absence signal then cookie
-      /\b(httpOnly|http[- ]only|Secure|sameSite|same[- ]site)\b.{0,20}\b(missing|not\s+set|absent|disabled)\b.{0,20}\bcookie\b/i,
+      /\b(httpOnly|http[- ]only|Secure|sameSite|same[- ]site)\b.{0,20}\b(missing|not\s+set|absent|disabled)\b.{0,20}\bcookies?\b/i,
     ] },
 
   { id: "verbose-error-exposed", label: "Verbose error / stack trace exposed to users", category: "security", priority: 3,
     matchers: [
-      // stack trace + user/client/response within a 60-char window (any order)
-      /\bstack\s+trace\b.{0,60}\b(user|client|response|public|end[- ]user)\b/i,
-      /\b(user|client|response|public|end[- ]user)\b.{0,60}\bstack\s+trace\b/i,
+      // stack trace + user/client/response within a 60-char window (any order).
+      // Note: users?/clients? so the common plural ("…to users") also matches.
+      /\bstack\s+trace\b.{0,60}\b(users?|clients?|response|public|end[- ]users?)\b/i,
+      /\b(users?|clients?|response|public|end[- ]users?)\b.{0,60}\bstack\s+trace\b/i,
       // internal error details returned / sent / in the response body
       // the .{0,50} window is wide enough to cover "back in the HTTP response body"
       /\b(internal\s+error|error\s+details?)\b.{0,50}\b(return(ed|ing)?|sends?|sent|expos(ed|ing)?|response\s+body|back\s+in|back\s+to)\b/i,
       /\b(return(ed|ing)?|sends?|sent|expos(ed|ing)?)\b.{0,30}\b(internal\s+error|error\s+details?)\b/i,
       // verbose error message exposes internals
       /\bverbose\s+error\b.{0,30}\b(expos(ed|ing|es?)|reveal|leak|sent?|show)\b/i,
+      // sending a stack trace straight to the client via a response method
+      // (res.send(err.stack), res.json({error: e.stack}), …) — NOT safe server-side
+      // logging like console.log(err.stack), which uses .log() and is excluded.
+      /\.(send|json|end|write)\s*\([^)]{0,80}\.stack\b/i,
     ] },
 
   { id: "cleartext-token-storage", label: "Auth token stored in plaintext (localStorage)", category: "security", priority: 3,
     matchers: [
       // token/JWT stored in localStorage — requires a token-type term (space, underscore, or hyphen separator)
-      /\b(auth[\s_-]?token|access[\s_-]?token|JWT|bearer[\s_-]?token|id[\s_-]?token|session[\s_-]?token)\b.{0,40}\blocal[sS]torage\b/i,
-      /\blocal[sS]torage\b.{0,40}\b(auth[\s_-]?token|access[\s_-]?token|JWT|bearer[\s_-]?token|id[\s_-]?token|session[\s_-]?token)\b/i,
+      /\b(auth[\s_-]?tokens?|access[\s_-]?tokens?|JWTs?|bearer[\s_-]?tokens?|id[\s_-]?tokens?|session[\s_-]?tokens?)\b.{0,40}\blocal[sS]torage\b/i,
+      /\blocal[sS]torage\b.{0,40}\b(auth[\s_-]?tokens?|access[\s_-]?tokens?|JWTs?|bearer[\s_-]?tokens?|id[\s_-]?tokens?|session[\s_-]?tokens?)\b/i,
       // localStorage.setItem with a token-sounding key
       /\blocal[sS]torage\.(setItem|getItem)\s*\(\s*["'][^"']{0,20}(token|auth|jwt|credential)["']/i,
     ] },

@@ -292,3 +292,66 @@ export function riskLessonHint(conceptId: string): string {
     `This is a security risk. Explain why it is dangerous and how to fix it safely in plain English.`
   );
 }
+
+// The HINTS strings end with a directive aimed at the lesson *generator*
+// ("Explain this risk and show…"). That tail is noise when shown directly to a
+// person, so strip it for user-facing surfaces like `lumi check`.
+const MODEL_DIRECTIVE_TAIL = /\.\s+(Explain|Demonstrate|Fix this by showing|Walk through)\b[\s\S]*$/;
+
+/**
+ * The same risk guidance as {@link riskLessonHint}, but cleaned for showing
+ * straight to a learner: the trailing "Explain…/Demonstrate…" instruction meant
+ * for the AI model is removed, leaving just the plain-English why-and-how-to-fix.
+ */
+export function riskAdvice(conceptId: string): string {
+  const hint = HINTS[conceptId];
+  if (!hint) return "This is a security risk — worth fixing before you share or ship this code.";
+  return hint.replace(MODEL_DIRECTIVE_TAIL, ".").trim();
+}
+
+/** Beginner-friendly word for a severity ("danger" → "high", etc.). */
+export function severityLabel(severity: Severity): string {
+  return severity === "danger" ? "high" : severity === "warn" ? "medium" : "low";
+}
+
+// One short, actionable fix per risk — for the "Fix these first" list in
+// `lumi audit`, where the full hint is too long and the risk *description*
+// (the first sentence of the hint) is the wrong thing to show.
+const RISK_FIX: Record<string, string> = {
+  "hardcoded-secret": "Move the secret into a .env file (never committed) and read it via an environment variable.",
+  "secret-in-frontend": "Drop the NEXT_PUBLIC_/VITE_/REACT_APP_ prefix and call the service from a server-side route instead.",
+  "missing-auth": "Add an authentication check (verify a session or token) before the route runs.",
+  "missing-input-validation": "Validate the input's type, length, and format before using it (e.g. with Zod).",
+  "sql-injection-risk": "Use parameterized queries instead of building SQL from user input.",
+  "env-file-exposed": "Add .env to .gitignore and commit a .env.example with fake values instead.",
+  "plaintext-http": "Switch the URL from http:// to https://.",
+  "weak-password-storage": "Hash passwords with bcrypt, Argon2, or scrypt — never plain text or MD5/SHA-1.",
+  "eval-injection": "Remove eval()/new Function(); sanitize any HTML with DOMPurify before rendering.",
+  "open-cors": "Replace the wildcard origin (*) with an allowlist of the specific domains you trust.",
+  "xss": "Escape or sanitize user content (e.g. DOMPurify) instead of setting innerHTML directly.",
+  "csrf": "Protect state-changing routes with a CSRF token or SameSite cookies.",
+  "path-traversal": "Resolve the path and confirm it stays inside the intended base directory before opening it.",
+  "ssrf": "Allowlist the schemes and hostnames your server is allowed to fetch.",
+  "idor": "Check the logged-in user owns the resource before returning it.",
+  "insecure-deserialization": "Don't deserialize untrusted data with powerful serializers; use schema-validated JSON.",
+  "missing-rate-limit": "Add rate limiting to login and other sensitive endpoints (e.g. express-rate-limit).",
+  "default-credentials": "Change every default password to a strong, unique one right after setup.",
+  "sensitive-data-in-logs": "Redact passwords, tokens, and personal data before anything reaches a logging call.",
+  "mass-assignment": "Allowlist the fields users may set instead of passing the whole request body to the database.",
+  "debug-mode-in-prod": "Turn debug mode off in production and show users a generic error page.",
+  "open-redirect": "Only redirect to an allowlist of safe paths, never to a user-supplied URL.",
+  "jwt-alg-none": "Verify JWTs with an explicit algorithm such as HS256 and reject 'none'.",
+  "insecure-cookie": "Set HttpOnly, Secure, and SameSite on any cookie that holds auth state.",
+  "verbose-error-exposed": "Return a generic error to users and log the full details server-side only.",
+  "cleartext-token-storage": "Store auth tokens in HttpOnly cookies rather than localStorage.",
+  "directory-listing": "Disable directory listing (nginx: remove autoindex; Apache: Options -Indexes).",
+  "ssti": "Pass user input as template variables — never build the template string from it.",
+};
+
+/**
+ * One short, imperative fix for a risk, suitable for a prioritized "do this first"
+ * list. Falls back to a safe generic action for unknown ids.
+ */
+export function riskFix(conceptId: string): string {
+  return RISK_FIX[conceptId] ?? "Review this with someone you trust and fix it before you ship.";
+}

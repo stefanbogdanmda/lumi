@@ -1,5 +1,78 @@
 import { describe, it, expect } from "vitest";
-import { detectRisks, riskLessonHint, SECURITY_CONCEPT_IDS } from "../src/risk";
+import { detectRisks, riskLessonHint, riskAdvice, riskFix, severityLabel, SECURITY_CONCEPT_IDS } from "../src/risk";
+import { CONCEPTS } from "../src/concepts";
+
+// ---------------------------------------------------------------------------
+// Security dictionary integrity — guards against adding a security concept
+// without a severity, or leaving any security concept with only a generic
+// fallback for its hint/fix/advice (which would silently degrade `check`/`audit`).
+// ---------------------------------------------------------------------------
+
+describe("security lens handles plural phrasings (no \\bword\\b boundary bug)", () => {
+  // Regression guard: matchers anchored on a singular noun (\buser\b, \bcookie\b, …)
+  // silently missed the common plural. Each pair must fire on BOTH singular and plural.
+  const pairs: Array<[string, string, string]> = [
+    ["the auth token is stored in localStorage", "the auth tokens are stored in localStorage", "cleartext-token-storage"],
+    ["the cookie is missing the httpOnly flag", "the cookies are missing the httpOnly flag", "insecure-cookie"],
+    ["the endpoint has no authentication", "the endpoints have no authentication", "missing-auth"],
+    ["the password is logged to the console", "the passwords are logged to the console", "sensitive-data-in-logs"],
+    ["it shows the stack trace to the user", "it shows the stack trace to users", "verbose-error-exposed"],
+    ["the app stores the password in plain text", "the app stores passwords in plain text", "weak-password-storage"],
+  ];
+  for (const [sing, plur, id] of pairs) {
+    it(`${id}: both singular and plural fire`, () => {
+      expect(detectRisks(sing).some((r) => r.conceptId === id), `singular: ${sing}`).toBe(true);
+      expect(detectRisks(plur).some((r) => r.conceptId === id), `plural: ${plur}`).toBe(true);
+    });
+  }
+});
+
+describe("security lens does not cry wolf on safe code", () => {
+  // The wedge's credibility depends on NOT false-alarming on correct, safe patterns.
+  // This guards future matcher additions from regressing precision on common safe code.
+  const safe = [
+    "const apiKey = process.env.API_KEY;",
+    'db.query("SELECT * FROM users WHERE id = ?", [userId]);',
+    "element.textContent = userComment;",
+    'app.use(cors({ origin: "https://myapp.com" }));',
+    "const hash = await bcrypt.hash(password, 12);",
+    'fetch("https://api.example.com/data");',
+    'res.cookie("session", id, { httpOnly: true, secure: true, sameSite: "lax" });',
+    'jwt.verify(token, secret, { algorithms: ["HS256"] });',
+    "we validate all user input with Zod",
+    "I set NODE_ENV=production before deploying",
+  ];
+  for (const snippet of safe) {
+    it(`no false alarm: ${snippet.slice(0, 40)}`, () => {
+      expect(detectRisks(snippet)).toEqual([]);
+    });
+  }
+});
+
+describe("security dictionary integrity", () => {
+  const securityConcepts = CONCEPTS.filter((c) => c.category === "security");
+
+  it("every security-category concept has a severity (is in SECURITY_CONCEPT_IDS)", () => {
+    for (const c of securityConcepts) {
+      expect(SECURITY_CONCEPT_IDS, `${c.id} has no severity`).toContain(c.id);
+    }
+  });
+
+  it("every severity id maps to a real security concept", () => {
+    const ids = new Set(securityConcepts.map((c) => c.id));
+    for (const id of SECURITY_CONCEPT_IDS) {
+      expect(ids.has(id), `severity for unknown concept: ${id}`).toBe(true);
+    }
+  });
+
+  it("every security concept has curated (non-fallback) hint, fix, and advice", () => {
+    for (const id of SECURITY_CONCEPT_IDS) {
+      expect(riskLessonHint(id), `${id} uses the generic hint fallback`).not.toMatch(/^This is a security risk\. Explain/);
+      expect(riskFix(id), `${id} uses the generic fix fallback`).not.toMatch(/^Review this with someone/);
+      expect(riskAdvice(id), `${id} uses the generic advice fallback`).not.toMatch(/^This is a security risk — worth fixing/);
+    }
+  });
+});
 
 // ---------------------------------------------------------------------------
 // PART 1: detectRisks — positive detection cases
@@ -1072,5 +1145,61 @@ describe("detectRisks — FIX 2: eval-injection tightened matcher", () => {
   it("eval( x ) with spaces still fires eval-injection", () => {
     const hits = detectRisks("eval( x )");
     expect(hits.map((h) => h.conceptId)).toContain("eval-injection");
+  });
+});
+
+describe("riskAdvice", () => {
+  it("strips the trailing model directive aimed at the lesson generator", () => {
+    const advice = riskAdvice("hardcoded-secret");
+    expect(advice).not.toMatch(/Explain this risk/i);
+    // …but keeps the substantive why/how-to-fix content
+    expect(advice.toLowerCase()).toContain("environment variable");
+    expect(advice.trim().endsWith(".")).toBe(true);
+  });
+
+  it("never leaves a model directive in any security concept's advice", () => {
+    for (const id of SECURITY_CONCEPT_IDS) {
+      const advice = riskAdvice(id);
+      expect(advice).not.toMatch(/\.\s+(Explain|Demonstrate|Fix this by showing|Walk through)\b/);
+      expect(advice.length).toBeGreaterThan(20); // didn't truncate to nothing
+    }
+  });
+
+  it("preserves technical tokens with periods (e.g. process.env)", () => {
+    expect(riskAdvice("hardcoded-secret")).toContain("process.env");
+  });
+
+  it("returns a safe fallback for an unknown id", () => {
+    expect(riskAdvice("not-a-real-risk").toLowerCase()).toContain("security risk");
+  });
+});
+
+describe("riskFix", () => {
+  it("gives a short, single-sentence action for a known risk", () => {
+    const fix = riskFix("hardcoded-secret");
+    expect(fix.toLowerCase()).toContain(".env");
+    expect(fix.length).toBeLessThan(160); // concise enough for a list
+  });
+
+  it("provides a fix for every security concept, each a real sentence", () => {
+    for (const id of SECURITY_CONCEPT_IDS) {
+      const fix = riskFix(id);
+      expect(fix.length).toBeGreaterThan(15);
+      expect(fix.trim().endsWith(".")).toBe(true);
+      // It's an action, not the risk description: no leaked model directive.
+      expect(fix).not.toMatch(/Explain this|Demonstrate/i);
+    }
+  });
+
+  it("returns a safe generic fix for an unknown id", () => {
+    expect(riskFix("not-a-real-risk").toLowerCase()).toContain("ship");
+  });
+});
+
+describe("severityLabel", () => {
+  it("maps internal severities to beginner-friendly words", () => {
+    expect(severityLabel("danger")).toBe("high");
+    expect(severityLabel("warn")).toBe("medium");
+    expect(severityLabel("info")).toBe("low");
   });
 });

@@ -10,7 +10,7 @@
 import { readdirSync, readFileSync, statSync, Dirent } from "node:fs";
 import { join, relative, extname } from "node:path";
 import { auditRisks, gradeFor, AuditGrade } from "./audit";
-import { riskLessonHint, RiskHit } from "./risk";
+import { riskFix, RiskHit } from "./risk";
 
 /** Directories never worth scanning (deps, build output, VCS, Lumi state). */
 const IGNORE_DIRS = new Set([
@@ -126,7 +126,7 @@ export function auditPath(
   const topFixes = [...fixByConcept.entries()]
     .sort((a, b) => SEV_RANK[a[1]] - SEV_RANK[b[1]])
     .slice(0, 3)
-    .map(([conceptId]) => riskLessonHint(conceptId));
+    .map(([conceptId]) => riskFix(conceptId));
 
   return {
     grade: gradeFor(danger, warn),

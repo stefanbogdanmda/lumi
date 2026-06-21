@@ -13,6 +13,27 @@ import { detectConcepts } from "../src/detector";
 // Dictionary integrity
 // ---------------------------------------------------------------------------
 
+describe("api detection", () => {
+  it("fires on 'API returns/data' phrasings", () => {
+    expect(detectConcepts("the API returns JSON data")).toContain("api");
+    expect(detectConcepts("the API response was slow")).toContain("api");
+  });
+  it("does not fire on a non-tech 'API' mention", () => {
+    expect(detectConcepts("the company API guidelines were updated")).not.toContain("api");
+  });
+});
+
+describe("caching detection", () => {
+  it("fires on common 'cache the response/result for speed' phrasings", () => {
+    expect(detectConcepts("I cached the response to make it faster")).toContain("caching");
+    expect(detectConcepts("caching the API result")).toContain("caching");
+  });
+  it("does not fire on everyday 'cache' usage", () => {
+    expect(detectConcepts("let's cache in on this opportunity")).not.toContain("caching");
+    expect(detectConcepts("the cache of weapons was found")).not.toContain("caching");
+  });
+});
+
 describe("CONCEPTS dictionary integrity", () => {
   it("all concept ids are unique", () => {
     const ids = CONCEPTS.map((c) => c.id);
@@ -200,6 +221,14 @@ describe("new security concept — mass-assignment", () => {
   it("detects spread of request body into database record", () => {
     expect(detectConcepts("User.create({ ...req.body }) allows mass assignment of any field")).toContain("mass-assignment");
   });
+  it("detects passing req.body straight into an ORM persistence call", () => {
+    expect(detectConcepts("User.create(req.body)")).toContain("mass-assignment");
+    expect(detectConcepts("const u = new User(req.body)")).toContain("mass-assignment");
+  });
+  it("FALSE-POSITIVE: res.json(req.body) / validate(req.body) do NOT fire mass-assignment", () => {
+    expect(detectConcepts("res.json(req.body)")).not.toContain("mass-assignment");
+    expect(detectConcepts("validate(req.body)")).not.toContain("mass-assignment");
+  });
   it("FALSE-POSITIVE: 'assign values to the form fields' does NOT fire mass-assignment", () => {
     expect(detectConcepts("assign values to the form fields before submitting")).not.toContain("mass-assignment");
   });
@@ -217,6 +246,12 @@ describe("new security concept — debug-mode-in-prod", () => {
   });
   it("detects debug mode left on in prod", () => {
     expect(detectConcepts("debug mode is still enabled on the production server")).toContain("debug-mode-in-prod");
+  });
+  it("detects NODE_ENV left at development on a production server", () => {
+    expect(detectConcepts('process.env.NODE_ENV = "development"; // on the prod server')).toContain("debug-mode-in-prod");
+  });
+  it("FALSE-POSITIVE: NODE_ENV=development for local dev does NOT fire", () => {
+    expect(detectConcepts("set NODE_ENV=development for local testing")).not.toContain("debug-mode-in-prod");
   });
   it("FALSE-POSITIVE: 'enable debug logging locally' does NOT fire debug-mode-in-prod", () => {
     expect(detectConcepts("enable debug logging locally to trace the issue")).not.toContain("debug-mode-in-prod");
@@ -397,6 +432,14 @@ describe("new security concept — jwt-alg-none", () => {
   it("detects algorithm none in JWT header", () => {
     expect(detectConcepts('JWT header {"alg":"none"} disables signing')).toContain("jwt-alg-none");
   });
+  it("detects the jsonwebtoken algorithms: [\"none\"] options form", () => {
+    expect(detectConcepts('jwt.verify(token, secret, { algorithms: ["none"] })')).toContain("jwt-alg-none");
+    expect(detectConcepts('jwt.verify(t, s, { algorithms: ["HS256", "none"] })')).toContain("jwt-alg-none");
+  });
+  it("FALSE-POSITIVE: a safe algorithms allowlist does NOT fire jwt-alg-none", () => {
+    expect(detectConcepts('jwt.verify(token, secret, { algorithms: ["HS256"] })')).not.toContain("jwt-alg-none");
+    expect(detectConcepts('jwt.verify(t, s, { algorithms: ["RS256", "HS256"] })')).not.toContain("jwt-alg-none");
+  });
   it("FALSE-POSITIVE: 'decode a JWT to read claims' does NOT fire jwt-alg-none", () => {
     expect(detectConcepts("decode a JWT to read the user claims from the payload")).not.toContain("jwt-alg-none");
   });
@@ -423,9 +466,38 @@ describe("new security concept — insecure-cookie", () => {
   });
 });
 
+describe("prose risk descriptions (browser-builder paste mode)", () => {
+  it("detects a hardcoded secret described in plain English", () => {
+    expect(detectConcepts("the API key is hardcoded in the source")).toContain("hardcoded-secret");
+    expect(detectConcepts("there's a hardcoded secret in the code")).toContain("hardcoded-secret");
+  });
+  it("does not fire hardcoded-secret on benign 'hardcoded' usage", () => {
+    expect(detectConcepts("I hardcoded the timeout value")).not.toContain("hardcoded-secret");
+    expect(detectConcepts("hardcoded the keyboard shortcut")).not.toContain("hardcoded-secret");
+  });
+  it("does not fire hardcoded-secret on preventive phrasing", () => {
+    expect(detectConcepts("to prevent hardcoded secrets we use environment variables")).not.toContain("hardcoded-secret");
+    expect(detectConcepts("never hardcode secrets in the code")).not.toContain("hardcoded-secret");
+  });
+  it("detects plaintext password storage in the plural ('passwords')", () => {
+    expect(detectConcepts("the app stores passwords in plain text")).toContain("weak-password-storage");
+  });
+  it("detects a stack trace shown to users (plural)", () => {
+    expect(detectConcepts("error messages show the full stack trace to users")).toContain("verbose-error-exposed");
+  });
+});
+
 describe("new security concept — verbose-error-exposed", () => {
   it("detects stack trace returned to the user", () => {
     expect(detectConcepts("the API returns the full stack trace to the user on error")).toContain("verbose-error-exposed");
+  });
+  it("detects a stack trace sent to the client via a response method", () => {
+    expect(detectConcepts("res.status(500).send(err.stack)")).toContain("verbose-error-exposed");
+    expect(detectConcepts("res.json({ error: err.stack })")).toContain("verbose-error-exposed");
+  });
+  it("FALSE-POSITIVE: safe server-side stack logging does NOT fire verbose-error-exposed", () => {
+    expect(detectConcepts("console.log(err.stack)")).not.toContain("verbose-error-exposed");
+    expect(detectConcepts("logger.error(err.stack)")).not.toContain("verbose-error-exposed");
   });
   it("detects internal error details in response", () => {
     expect(detectConcepts("server sends internal error details back in the HTTP response body")).toContain("verbose-error-exposed");
