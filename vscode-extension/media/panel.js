@@ -413,6 +413,29 @@ window.addEventListener("message", (e) => {
       } else {
         pasteResult.textContent = "✨ " + msg.count + " new lesson" + (msg.count === 1 ? "" : "s") + " — see Lessons tab.";
       }
+      // Security lens: flag risky patterns in the pasted code.
+      if (Array.isArray(msg.risks) && msg.risks.length) {
+        const box = document.createElement("div");
+        box.className = "paste-risks";
+        const head = document.createElement("p");
+        head.className = "paste-risks-head";
+        head.textContent = "🔍 " + msg.risks.length + " security issue" + (msg.risks.length === 1 ? "" : "s") + " spotted in that code:";
+        box.appendChild(head);
+        msg.risks.forEach((risk) => {
+          const item = document.createElement("div");
+          item.className = "paste-risk paste-risk-" + risk.severity;
+          const label = document.createElement("div");
+          label.className = "paste-risk-label";
+          label.textContent = (risk.severity === "high" ? "🚨 " : "⚠️ ") + risk.label + " (" + risk.severity + ")";
+          const advice = document.createElement("div");
+          advice.className = "paste-risk-advice";
+          advice.textContent = risk.advice;
+          item.appendChild(label);
+          item.appendChild(advice);
+          box.appendChild(item);
+        });
+        pasteResult.appendChild(box);
+      }
     }
 
   } else if (msg.type === "paths") {

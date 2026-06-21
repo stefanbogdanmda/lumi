@@ -342,6 +342,23 @@ describe("handleMessage: paste", () => {
     const result = posted.find((m: any) => m.type === "pasteResult") as any;
     expect(result).toBeDefined();
     expect(result.count).toBe(lessons.length);
+    expect(Array.isArray(result.risks)).toBe(true);
+  });
+
+  it("runs the security lens on pasted code and returns risks", async () => {
+    const lumi = makeLumi();
+    const { deps, posted } = makeDeps(lumi);
+
+    await handleMessage(
+      { type: "paste", text: 'const apiKey = "sk-1234567890abcdef1234567890abcdef";' },
+      deps,
+    );
+
+    const result = posted.find((m: any) => m.type === "pasteResult") as any;
+    expect(result.risks.length).toBeGreaterThanOrEqual(1);
+    expect(result.risks[0]).toHaveProperty("label");
+    expect(result.risks[0]).toHaveProperty("severity");
+    expect(result.risks[0]).toHaveProperty("advice");
   });
 
   it("marks each taught concept as learned", async () => {

@@ -301,6 +301,12 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       line-height: 1.55;
       color: var(--text);
     }
+    .recall-analogy {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
     .recall-actions {
       display: flex;
       gap: 8px;
@@ -546,6 +552,19 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       line-height: 1.5;
       min-height: 18px;
     }
+    .paste-risks { margin-top: 12px; }
+    .paste-risks-head { font-size: 13px; color: var(--text); margin: 0 0 6px; font-weight: 600; }
+    .paste-risk {
+      border-left: 3px solid var(--border);
+      padding: 6px 10px;
+      margin: 6px 0;
+      background: rgba(255,255,255,0.03);
+      border-radius: 4px;
+    }
+    .paste-risk-high { border-left-color: #ff6b6b; }
+    .paste-risk-medium { border-left-color: #ffc56b; }
+    .paste-risk-label { font-size: 13px; font-weight: 600; color: var(--text); }
+    .paste-risk-advice { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     /* ── Tier pill ───────────────────────────────────────────────────────── */
     #tier-pill {
@@ -1116,6 +1135,11 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
         if (data.milestone) {
           footerMilestone.textContent = data.milestone;
           footerMilestone.style.display = '';
+        } else if (data.nextMilestone && data.nextMilestone.remaining > 0) {
+          var nm = data.nextMilestone;
+          footerMilestone.textContent = '🎯 ' + nm.remaining + ' more concept' +
+            (nm.remaining === 1 ? '' : 's') + ' to reach ' + nm.reward;
+          footerMilestone.style.display = '';
         } else {
           footerMilestone.style.display = 'none';
         }
@@ -1222,6 +1246,14 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
           answerEl.textContent = explanation !== null
             ? explanation
             : '(no saved explanation)';
+          // Surface the analogy too — at reveal time it's the memory hook that
+          // makes a concept stick.
+          if (data.lesson && data.lesson.analogy) {
+            var an = document.createElement('div');
+            an.className = 'recall-analogy';
+            an.textContent = 'Think of it like: ' + data.lesson.analogy;
+            answerEl.appendChild(an);
+          }
           btnReveal.style.display   = 'none';
           btnRemembered.style.display = '';
           btnFuzzy.style.display      = '';
@@ -1476,6 +1508,29 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
           } else {
             pasteResult.textContent = '✨ ' + data.count + ' new lesson' + (data.count === 1 ? '' : 's') + ' added — see the Lessons tab.';
             fetchProgress();
+          }
+          // Security lens: flag risky patterns in the pasted code, right here.
+          if (data.risks && data.risks.length) {
+            var box = document.createElement('div');
+            box.className = 'paste-risks';
+            var head = document.createElement('p');
+            head.className = 'paste-risks-head';
+            head.textContent = '🔍 ' + data.risks.length + ' security issue' + (data.risks.length === 1 ? '' : 's') + ' spotted in that code:';
+            box.appendChild(head);
+            data.risks.forEach(function (risk) {
+              var item = document.createElement('div');
+              item.className = 'paste-risk paste-risk-' + risk.severity;
+              var label = document.createElement('div');
+              label.className = 'paste-risk-label';
+              label.textContent = (risk.severity === 'high' ? '🚨 ' : '⚠️ ') + risk.label + ' (' + risk.severity + ')';
+              var advice = document.createElement('div');
+              advice.className = 'paste-risk-advice';
+              advice.textContent = risk.advice;
+              item.appendChild(label);
+              item.appendChild(advice);
+              box.appendChild(item);
+            });
+            pasteResult.appendChild(box);
           }
         } else if (data.error) {
           pasteHint.textContent = 'Error: ' + data.error;

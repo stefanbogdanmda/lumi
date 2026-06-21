@@ -147,6 +147,12 @@ describe("createOverlayServer", () => {
     expect(typeof json.level).toBe("string");
     expect(typeof json.streakDays).toBe("number");
     expect(json.streakDays).toBeGreaterThanOrEqual(0);
+    // forward nudge for the overlay footer (parity with `lumi progress`)
+    expect(Object.keys(json)).toContain("nextMilestone");
+    if (json.nextMilestone) {
+      expect(json.nextMilestone).toHaveProperty("remaining");
+      expect(json.nextMilestone).toHaveProperty("reward");
+    }
   });
 
   it("POST /api/explain with known term returns lesson with correct conceptId", async () => {
@@ -585,6 +591,36 @@ describe("createOverlayServer", () => {
       const { rmSync } = await import("node:fs");
       rmSync(freshHome, { recursive: true, force: true });
     }
+  });
+
+  it("POST /api/paste runs the security lens and returns risks for risky code", async () => {
+    const freshHome = mkdtempSync(join(tmpdir(), "lumi-paste-risk-"));
+    const srv = createOverlayServer({ home: freshHome, generator: new MockGenerator(), pollMs: 50 });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const p = (srv.address() as http.AddressInfo).port;
+    try {
+      const res = await post(p, "/api/paste", { text: 'const apiKey = "sk-1234567890abcdef1234567890abcdef";' });
+      expect(res.status).toBe(200);
+      const json = JSON.parse(res.body);
+      expect(Array.isArray(json.risks)).toBe(true);
+      expect(json.risks.length).toBeGreaterThanOrEqual(1);
+      const hit = json.risks[0];
+      expect(hit).toHaveProperty("label");
+      expect(hit).toHaveProperty("severity"); // friendly word, e.g. "high"
+      expect(hit).toHaveProperty("advice");
+      expect(hit.advice).not.toMatch(/Explain this risk/i); // clean advice, no model directive
+    } finally {
+      await new Promise<void>((resolve) => srv.close(() => resolve()));
+      const { rmSync } = await import("node:fs");
+      rmSync(freshHome, { recursive: true, force: true });
+    }
+  });
+
+  it("POST /api/paste with benign text returns an empty risks array", async () => {
+    const res = await post(port, "/api/paste", { text: "I learned about functions today." });
+    expect(res.status).toBe(200);
+    const json = JSON.parse(res.body);
+    expect(Array.isArray(json.risks)).toBe(true);
   });
 
   it("POST /api/paste with empty text returns 400 { error: 'text required' }", async () => {
