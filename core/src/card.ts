@@ -224,7 +224,7 @@ export function renderProgressCard(input: ProgressCardInput): string {
   <text x="${W / 2}" y="${H - 40}"
         font-family="ui-monospace,SFMono-Regular,Menlo,monospace"
         font-size="15" fill="${DIM_WHITE}"
-        text-anchor="middle" letter-spacing="0.5">Made with Lumi — npm i -g lumi</text>
+        text-anchor="middle" letter-spacing="0.5">Made with Lumi — npm i -g @lumi/core</text>
 
 </svg>`;
 

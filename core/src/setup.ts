@@ -739,6 +739,16 @@ export async function runSetup(
     out(`  ${icon}  ${tool}: ${label}`);
   }
 
+  // After connecting at least one tool, tell the beginner exactly what happens
+  // next — the summary alone leaves "…now what?" unanswered.
+  const anyConnected = summary.some((s) => s.result === "wired" || s.result === "already");
+  if (anyConnected) {
+    out("");
+    out("Next: keep building with your AI tool — Lumi will start teaching as new concepts appear.");
+    out("  • Check it's working:  lumi doctor");
+    out("  • See your lessons:    lumi serve   (opens the web overlay)");
+  }
+
   const allErrored = summary.every((s) => s.result === "error");
   return allErrored ? 1 : 0;
 }

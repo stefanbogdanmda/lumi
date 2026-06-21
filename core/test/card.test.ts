@@ -59,7 +59,9 @@ describe("renderProgressCard", () => {
       streakDays: 0,
       recentLabels: [],
     });
-    expect(svg).toContain("npm i -g lumi");
+    // Must point at the real package (@lumi/core), not a bare "lumi" that installs
+    // an unrelated npm package.
+    expect(svg).toContain("npm i -g @lumi/core");
   });
 
   it("contains the level string", () => {

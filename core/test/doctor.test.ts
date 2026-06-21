@@ -22,6 +22,19 @@ describe("doctorReport", () => {
     expect(report).toContain("offline");
   });
 
+  it("leads with an 'all set' verdict when there are no warnings", () => {
+    // claude available + pro plan + tools present → no ⚠️ items
+    const report = doctorReport({ home, claudeAvailable: true, tools: ["codex"], tier: "pro" });
+    expect(report).toContain("You're all set");
+    // verdict appears before the detailed checks
+    expect(report.indexOf("You're all set")).toBeLessThan(report.indexOf("Claude CLI found"));
+  });
+
+  it("leads with an 'almost there' verdict counting warnings", () => {
+    const report = doctorReport({ home, claudeAvailable: false });
+    expect(report).toMatch(/Almost there — \d+ thing/);
+  });
+
   it("claudeAvailable:true → contains 'Claude CLI found'", () => {
     const report = doctorReport({ home, claudeAvailable: true });
     expect(report).toContain("Claude CLI found");

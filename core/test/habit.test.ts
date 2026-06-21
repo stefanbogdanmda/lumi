@@ -7,6 +7,7 @@ import {
   dailyGoalStatus,
   streakWithFreeze,
   earnedBadges,
+  nextBadge,
   JsonFileHabitStore,
 } from "../src/habit";
 import type { HabitState } from "../src/habit";
@@ -564,5 +565,43 @@ describe("JsonFileHabitStore", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// nextBadge
+// ---------------------------------------------------------------------------
+
+describe("nextBadge", () => {
+  it("points a fresh learner at the First Step badge", () => {
+    expect(nextBadge(0)).toMatchObject({ id: "first-concept", remaining: 1 });
+  });
+
+  it("counts down toward the next concept-count badge", () => {
+    expect(nextBadge(1)).toMatchObject({ id: "concepts-10", remaining: 9 });
+    expect(nextBadge(10)).toMatchObject({ id: "concepts-25", remaining: 15 });
+    expect(nextBadge(25)).toMatchObject({ id: "concepts-50", remaining: 25 });
+  });
+
+  it("every target matches a real earned badge at that count", () => {
+    for (const count of [1, 10, 25, 50]) {
+      const ids = earnedBadges(
+        Array.from({ length: count }, (_, i) => ({ id: `x${i}`, learnedAt: "2026-01-01T00:00:00Z", seenCount: 1 })),
+        0,
+      ).map((b) => b.id);
+      // the badge whose target is exactly `count` should now be earned
+      const target = [
+        { c: 1, id: "first-concept" },
+        { c: 10, id: "concepts-10" },
+        { c: 25, id: "concepts-25" },
+        { c: 50, id: "concepts-50" },
+      ].find((t) => t.c === count)!;
+      expect(ids).toContain(target.id);
+    }
+  });
+
+  it("returns null once all count badges are earned", () => {
+    expect(nextBadge(50)).toBeNull();
+    expect(nextBadge(100)).toBeNull();
   });
 });

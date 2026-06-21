@@ -387,6 +387,16 @@ describe("runSetup", () => {
     const cfg = readConfig(".codex/config.toml");
     expect(cfg).toContain("lumi-codex-hook.sh");
     expect(lines(log)).toContain("connected to Codex");
+    // After connecting, the beginner is told what to do next
+    expect(lines(log)).toContain("lumi doctor");
+    expect(lines(log)).toContain("lumi serve");
+  });
+
+  it("does not show next-step guidance when nothing connects", async () => {
+    // No tool dirs created → nothing detected → no "Next:" guidance
+    const log: string[] = [];
+    await runSetup([], { configHome, adaptersDir, out: (s) => log.push(s) });
+    expect(lines(log)).not.toContain("lumi doctor");
   });
 
   it("codex: idempotent — second run reports 'already connected', no backup on second run", async () => {

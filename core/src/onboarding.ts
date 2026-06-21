@@ -22,6 +22,7 @@ export function onboardingGuide(): string {
     "",
     "Try one right now:",
     "  lumi topics             Browse everything Lumi can teach",
+    "  lumi learn              Teach me my next concept, right now",
     '  lumi explain "api"      Learn a concept on the spot',
     "  lumi check              Paste your AI's output to spot risky code",
     "  lumi path               See your learning path and what's next",
