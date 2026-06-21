@@ -9,6 +9,76 @@ describe("detectConcepts", () => {
     expect(ids).toContain("git-branch");
   });
 
+  describe("detection survives markdown formatting (AI output is markdown)", () => {
+    it("detects through inline backticks, bold, fences, and list markers", () => {
+      expect(detectConcepts("I ran `git commit` to save your work")).toContain("git-commit");
+      expect(detectConcepts("Created a `.env` file for your secrets")).toContain("env-var");
+      expect(detectConcepts("- Set up an **API endpoint** that returns data")).toContain("api");
+    });
+  });
+
+  describe("array detects the reverse 'item in the array' order", () => {
+    it("fires when the anchor precedes 'array'", () => {
+      expect(detectConcepts("iterate over every item in the array")).toContain("array");
+      expect(detectConcepts("the elements of the array")).toContain("array");
+    });
+    it("does not fire on everyday 'array of …' phrases", () => {
+      expect(detectConcepts("we offer an array of services")).not.toContain("array");
+      expect(detectConcepts("a dazzling array of colors")).not.toContain("array");
+    });
+  });
+
+  describe("function detects the reverse 'parameter to the function' order", () => {
+    it("fires when the anchor precedes 'function'", () => {
+      expect(detectConcepts("I added a parameter to the function")).toContain("function");
+      expect(detectConcepts("pass arguments to the function")).toContain("function");
+    });
+    it("does not fire on everyday 'function' (heart, event room)", () => {
+      expect(detectConcepts("the function of the heart is to pump blood")).not.toContain("function");
+      expect(detectConcepts("we booked the function room for the party")).not.toContain("function");
+    });
+  });
+
+  describe("env-var detects a .env file mention", () => {
+    it("fires on the common '.env file' phrasings", () => {
+      for (const s of [
+        "I added a .env file to store your secret key.",
+        "Put it in .env.local instead.",
+        "Read it from process.env at runtime.",
+      ]) {
+        expect(detectConcepts(s), s).toContain("env-var");
+      }
+    });
+
+    it("does not fire on the word 'environment' alone", () => {
+      expect(detectConcepts("We work in a fast-paced environment.")).not.toContain("env-var");
+    });
+  });
+
+  describe("deploy is anchored to a software context", () => {
+    it("detects real deploy mentions", () => {
+      for (const s of [
+        "I deployed the app to production.",
+        "deploying my website to Vercel",
+        "the deployment pipeline failed",
+        "push to the production server",
+        "deploy the code to staging",
+      ]) {
+        expect(detectConcepts(s), s).toContain("deploy");
+      }
+    });
+
+    it("does NOT fire on ordinary 'deploy' English", () => {
+      for (const s of [
+        "We need to deploy the team to the new office location.",
+        "Deploy our sales reps to the eastern region.",
+        "They will deploy troops along the border.",
+      ]) {
+        expect(detectConcepts(s), s).not.toContain("deploy");
+      }
+    });
+  });
+
   it("detects npm install", () => {
     expect(detectConcepts("Running `npm install` ...")).toContain("npm-install");
   });

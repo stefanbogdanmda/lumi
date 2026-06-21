@@ -6,7 +6,7 @@
  * Pure: no I/O, no external deps.
  */
 
-import { detectRisks, riskLessonHint, RiskHit } from "./risk";
+import { detectRisks, riskFix, RiskHit } from "./risk";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,7 +59,7 @@ export function gradeFor(danger: number, warn: number): AuditGrade {
  *
  * - Uses `detectRisks` for detection (already sorts danger → warn → info).
  * - Grade follows the documented rule above.
- * - `topFixes` contains up to 3 `riskLessonHint` strings for the highest-
+ * - `topFixes` contains up to 3 short, actionable fixes for the highest-
  *   severity hits (danger first, then warn).
  */
 export function auditRisks(text: string): AuditReport {
@@ -75,7 +75,7 @@ export function auditRisks(text: string): AuditReport {
   }
 
   const grade = gradeFor(danger, warn);
-  const topFixes = hits.slice(0, 3).map((h) => riskLessonHint(h.conceptId));
+  const topFixes = hits.slice(0, 3).map((h) => riskFix(h.conceptId));
 
   return {
     grade,

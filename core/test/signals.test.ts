@@ -15,6 +15,12 @@ describe("conceptsFromSignals", () => {
     expect(ids).toContain("json");
   });
 
+  it("maps common dev actions whose concepts exist (tsc→compile, npm test→test-suite, .sql→database)", () => {
+    expect(conceptsFromSignals({ text: "", commands: ["tsc --noEmit"] }).map((s) => s.id)).toContain("compile");
+    expect(conceptsFromSignals({ text: "", commands: ["npm test"] }).map((s) => s.id)).toContain("test-suite");
+    expect(conceptsFromSignals({ text: "", files: ["db/schema.sql"] }).map((s) => s.id)).toContain("database");
+  });
+
   it("returns nothing for empty signals", () => {
     expect(conceptsFromSignals({ text: "" })).toEqual([]);
   });

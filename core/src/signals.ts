@@ -11,6 +11,8 @@ const COMMAND_RULES: { pattern: RegExp; id: string }[] = [
   { pattern: /\bgit\s+diff\b/i, id: "git-diff" },
   { pattern: /\b(npm|pnpm|yarn)\s+(install|add|i)\b/i, id: "npm-install" },
   { pattern: /\b(npm|pnpm|yarn)\s+run\b/i, id: "npm-script" },
+  { pattern: /\b(npm|pnpm|yarn)\s+(test|t)\b/i, id: "test-suite" },
+  { pattern: /\btsc\b/i, id: "compile" },
   { pattern: /\bdocker\b/i, id: "docker" },
   { pattern: /\bssh\b/i, id: "ssh" },
   { pattern: /\bcurl\b|\bwget\b/i, id: "http-request" },
@@ -24,6 +26,7 @@ const FILE_RULES: { pattern: RegExp; id: string }[] = [
   { pattern: /\.sh$/i, id: "shell-script" },
   { pattern: /(^|\/)\.env(\.|$)/i, id: "env-var" },
   { pattern: /\.test\.(t|j)sx?$/i, id: "test-suite" },
+  { pattern: /\.sql$/i, id: "database" },
 ];
 
 const COMMAND_SCORE = 3; // actions are stronger evidence than prose
