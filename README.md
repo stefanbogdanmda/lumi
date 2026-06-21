@@ -43,6 +43,8 @@ one that does all of this, unprompted, on *your real work*:
 - Writes a short, jargon-free, analogy-led lesson that **adapts to your level**
   (beginner → growing → confident). Teaches **at most 2 concepts per turn** so you're never flooded.
 - Every lesson links to an honest **"learn more"** source so you can go deeper.
+- Want to learn without waiting? **`lumi learn`** teaches the next concept on your path on
+  demand, and **`lumi explain`** answers a specific term (typo-tolerant, with "did you mean").
 
 ### Remember — so it actually sticks
 - **Teach-once + cross-tool memory:** learn `environment variable` in Cursor, and Lumi won't
@@ -50,6 +52,8 @@ one that does all of this, unprompted, on *your real work*:
 - A growing **personal glossary** of everything you've learned, in plain English.
 - **Spaced-repetition review** brings concepts back before you forget them, with
   **guess-before-reveal active recall** in the overlay so each review is a real memory event.
+  From the terminal, `lumi review --got "<term>"` (or `--forgot`) records how recall went so
+  the schedule actually advances.
 
 ### Stay safe — the security lens
 - `lumi check` runs a security lens over AI output and flags risky patterns in plain English
@@ -132,12 +136,13 @@ For exactly how it works under the hood: **[`docs/WHAT-LUMI-DOES.md`](docs/WHAT-
 |---|---|
 | `lumi progress` | How many concepts you've learned, and your level |
 | `lumi stats` | Streak, topics, recent concepts, badges |
-| `lumi glossary` | Print your personal glossary |
+| `lumi glossary [--out <file>]` | Print your personal glossary, or save it to a Markdown file |
 | `lumi topics [<category>]` | Browse every concept Lumi can teach, by category |
-| `lumi explain "<term>"` | Explain a specific concept now |
+| `lumi explain "<term>"` | Explain a specific concept now (typo-tolerant, suggests close matches) |
+| `lumi learn` | Teach me the next concept on my path — proactive, guided learning |
 | `lumi next` | Suggest what to build next — and why — for where you're at |
 | `lumi prompt "<idea>"` | Turn a rough idea into a clear, ready-to-paste prompt |
-| `lumi review` | Show concepts due for a refresher |
+| `lumi review [--got\|--forgot "<term>"]` | Refresh due concepts; record how recall went |
 | `lumi feed [--source S]` | Detect concepts from captured tool output and write lesson events |
 | `lumi path` | Learning-path progress and your next recommended concept |
 | `lumi card [--out <file>]` | Generate a shareable SVG progress card |
