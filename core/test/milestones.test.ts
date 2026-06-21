@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { welcomeMessage, milestoneFor, progressMessage } from "../src/milestones";
+import { welcomeMessage, milestoneFor, progressMessage, nextMilestone } from "../src/milestones";
 
 describe("welcomeMessage", () => {
   it("returns a non-empty string", () => {
@@ -29,6 +29,32 @@ describe("milestoneFor", () => {
 
   it("milestone at 30 mentions Confident level", () => {
     expect(milestoneFor(30)).toContain("Confident");
+  });
+});
+
+describe("nextMilestone", () => {
+  it("points a fresh learner at their first milestone", () => {
+    const nm = nextMilestone(0)!;
+    expect(nm.target).toBe(1);
+    expect(nm.remaining).toBe(1);
+  });
+
+  it("counts down toward the next celebration target", () => {
+    expect(nextMilestone(3)).toMatchObject({ target: 5, remaining: 2 });
+    expect(nextMilestone(10)).toMatchObject({ target: 15, remaining: 5 });
+    expect(nextMilestone(29)).toMatchObject({ target: 30, remaining: 1 });
+  });
+
+  it("targets always match milestoneFor's celebration counts", () => {
+    for (const count of [0, 1, 4, 5, 14, 29]) {
+      const nm = nextMilestone(count)!;
+      expect(milestoneFor(nm.target)).not.toBeNull();
+    }
+  });
+
+  it("returns null once every milestone is reached", () => {
+    expect(nextMilestone(30)).toBeNull();
+    expect(nextMilestone(50)).toBeNull();
   });
 });
 

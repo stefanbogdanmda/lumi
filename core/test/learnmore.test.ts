@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { learnMoreUrl } from "../src/learnmore";
+import { CONCEPTS } from "../src/concepts";
+
+describe("learnMoreUrl over the whole dictionary", () => {
+  it("produces a valid, non-empty-query URL for every concept", () => {
+    for (const c of CONCEPTS) {
+      const url = learnMoreUrl(c);
+      expect(url, `${c.id} has raw spaces`).not.toContain(" ");
+      expect(() => new URL(url), `${c.id} → ${url}`).not.toThrow();
+      expect(new URL(url).search.length, `${c.id} empty query`).toBeGreaterThan(3);
+    }
+  });
+});
 
 describe("learnMoreUrl", () => {
   it("uses MDN search for web concepts", () => {

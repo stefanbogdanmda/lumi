@@ -195,10 +195,14 @@ export async function runAdvise(deps: RunAdviseDeps = {}): Promise<number> {
     }
   }
 
-  // Empty-profile onboarding shortcut
+  // Empty-profile onboarding shortcut — give a brand-new user something to do now,
+  // not just "come back later".
   if (learned.length === 0) {
-    out("You haven't learned any concepts yet — start building and run `lumi next` again!");
-    out("Lumi will give you personalised advice once it has seen you in action.");
+    out("You haven't learned any concepts yet — but you can start right now:");
+    out("  lumi learn    teach me my first concept");
+    out("  lumi topics   browse everything Lumi can teach");
+    out("Or keep building with your AI — Lumi will teach concepts as they appear, then");
+    out("`lumi next` will give you personalised build advice.");
     return 0;
   }
 

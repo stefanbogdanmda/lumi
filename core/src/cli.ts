@@ -13,10 +13,10 @@ import { FallbackGenerator, ClaudeCliGenerator, CodexCliGenerator, GeminiCliGene
 import { CONCEPTS } from "./concepts";
 import { LessonGenerator } from "./types";
 import { extractSignals } from "./transcript";
-import { suggestConcepts } from "./detector";
+import { suggestConcepts, resolveConcept } from "./detector";
 import { topicCategories, topicsInCategory, categoryLabel, relatedConcepts } from "./topics";
 import { appendEvent, lessonEvent } from "./feed";
-import { milestoneFor } from "./milestones";
+import { milestoneFor, nextMilestone } from "./milestones";
 import { createOverlayServer } from "./server";
 import { doctorReport } from "./doctor";
 import { learningStats } from "./stats";
@@ -26,10 +26,10 @@ import { runSetup, detectInstalledTools } from "./setup";
 import { homedir } from "node:os";
 import { listPaths, allPathsProgress, nextAcrossPaths } from "./curriculum";
 import { progressCardFromProfile } from "./card";
-import { detectRisks, riskLessonHint } from "./risk";
+import { detectRisks, riskAdvice, severityLabel } from "./risk";
 import { auditRisks } from "./audit";
 import { auditPath } from "./scan";
-import { dailyGoalStatus, earnedBadges, JsonFileHabitStore, streakWithFreeze } from "./habit";
+import { dailyGoalStatus, earnedBadges, nextBadge, JsonFileHabitStore, streakWithFreeze } from "./habit";
 import { weeklyDigest, renderDigestText, renderDigestHtml } from "./digest";
 import { certificateFromProfile, isCertificateEligible } from "./certificate";
 import { detectStuck, unstuckAdvice } from "./unstuck";
@@ -77,12 +77,13 @@ const HELP = `Lumi — your AI mini-teacher
 Usage:
   lumi progress             Show how many concepts you've learned and your level
   lumi stats                Show learning stats: streak, topics, recent concepts
-  lumi glossary             Print your personal glossary
+  lumi glossary [--out <f>] Print your personal glossary (or save it to a Markdown file)
   lumi topics [<category>]  Browse everything Lumi can teach (or one category)
   lumi explain "<term>"     Explain a specific concept now
+  lumi learn                Teach me the next concept on my path (proactive learning)
   lumi next                 Suggest what to build next — and why — for where you're at
   lumi prompt "<idea>"      Turn a rough idea into a clear, ready-to-paste prompt
-  lumi review               Show concepts due for a refresher
+  lumi review [--got|--forgot "<term>"]  Refresh due concepts; record how recall went
   lumi feed [--source S]    Detect concepts from captured tool output and write lesson events to the feed
   lumi path                 Show learning path progress and your next recommended concept
   lumi card [--out <file>]  Generate a shareable SVG progress card
@@ -153,6 +154,8 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
         out("Badges:");
         for (const b of badges) out(`  🏅 ${b.label}`);
       }
+      const nb = nextBadge(s.total);
+      if (nb) out(`🎯 ${nb.remaining} more concept${nb.remaining === 1 ? "" : "s"} to earn the "${nb.label}" badge.`);
       return 0;
     }
     case "progress": {
@@ -160,10 +163,24 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
       out(`You've learned ${n} concept${n === 1 ? "" : "s"}. Level: ${levelFromCount(n)}.`);
       const m = milestoneFor(n);
       if (m) out(m);
+      const nm = nextMilestone(n);
+      if (nm) out(`🎯 ${nm.remaining} more concept${nm.remaining === 1 ? "" : "s"} to reach ${nm.reward}`);
       return 0;
     }
     case "glossary": {
-      out(renderGlossary(profile.listLearned()));
+      const md = renderGlossary(profile.listLearned());
+      const outIdx = argv.indexOf("--out");
+      // --out present but missing/flag-like argument → usage error (mirrors `card`)
+      if (outIdx >= 0 && (outIdx + 1 >= argv.length || argv[outIdx + 1].startsWith("-"))) {
+        out("Usage: lumi glossary [--out <file>]");
+        return 1;
+      }
+      if (outIdx >= 0) {
+        writeFileSync(argv[outIdx + 1], md, "utf8");
+        out(`Glossary written to ${argv[outIdx + 1]} — keep it in your project or share it.`);
+      } else {
+        out(md);
+      }
       return 0;
     }
     case "topics": {
@@ -195,14 +212,49 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
       return 0;
     }
     case "review": {
+      // Record a review result so the spaced-repetition clock actually advances:
+      //   lumi review --got "<term>"     remembered → next refresher further out
+      //   lumi review --forgot "<term>"  forgot → back to the short review queue
+      const gotIdx = argv.indexOf("--got");
+      const forgotIdx = argv.indexOf("--forgot");
+      if (gotIdx >= 0 || forgotIdx >= 0) {
+        const remembered = gotIdx >= 0;
+        const flag = remembered ? "--got" : "--forgot";
+        const idx = remembered ? gotIdx : forgotIdx;
+        const term = argv.slice(idx + 1).join(" ").trim();
+        if (!term) { out(`Usage: lumi review ${flag} "<term>"`); return 1; }
+        const concept = resolveConcept(term);
+        if (!concept || !profile.hasLearned(concept.id)) {
+          out(`You haven't learned "${term}" yet, so there's nothing to review.`);
+          return 1;
+        }
+        profile.review(concept.id, remembered);
+        if (remembered) {
+          out(`✅ Nice — "${concept.label}" marked reviewed. Your next refresher on it is further out now.`);
+        } else {
+          out(`👍 No worries — "${concept.label}" is back in the short-term review queue.`);
+          out(`Refresh it right now:  lumi explain "${concept.label}"`);
+        }
+        return 0;
+      }
+
       const due = dueForReview(profile.listLearned());
       if (due.length === 0) {
         out("Nothing to review — you're all caught up! 🎉");
         return 0;
       }
       const label = (id: string) => CONCEPTS.find((c) => c.id === id)?.label ?? id;
-      out("Time for a quick refresher on:");
-      for (const c of due) out(recallQuestion(label(c.id)));
+      // Cap the list so a big backlog isn't an overwhelming wall — oldest-due first.
+      const MAX_SHOWN = 5;
+      const shown = due.slice(0, MAX_SHOWN);
+      out(due.length > MAX_SHOWN
+        ? `Time for a quick refresher (${due.length} due — here are the ${MAX_SHOWN} most overdue):`
+        : "Time for a quick refresher on:");
+      for (const c of shown) out(recallQuestion(label(c.id)));
+      if (due.length > MAX_SHOWN) out(`…and ${due.length - MAX_SHOWN} more once you've cleared these.`);
+      out("");
+      out('After thinking it through, record how it went:');
+      out(`  lumi review --got "${label(due[0].id)}"     (or --forgot)`);
       return 0;
     }
     case "explain": {
@@ -230,12 +282,47 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
         return 0;
       }
       out(`🪄 ${lesson.title}\n\n${lesson.plainExplanation}\nWhy it matters: ${lesson.whyItMatters}`);
+      if (lesson.analogy) out(`Think of it like: ${lesson.analogy}`);
+      if (lesson.tinyExample) out(`Example: ${lesson.tinyExample}`);
       const concept = CONCEPTS.find((c) => c.id === lesson.conceptId);
       if (concept) out(`Learn more: ${learnMoreUrl(concept)}`);
       const related = relatedConcepts(lesson.conceptId, learnedBefore);
       if (related.length > 0) {
         out(`Related: ${related.map((r) => `"${r.label}"`).join(", ")}`);
       }
+      return 0;
+    }
+    case "learn": {
+      // Proactive, guided learning: teach the next concept on the learner's path,
+      // so someone who wants to learn (not just while building) has a clear button.
+      const learnedBefore = profile.listLearned().map((c) => c.id);
+      const next = nextAcrossPaths(learnedBefore);
+      if (!next) {
+        out("🎓 You've learned every concept on your learning paths — amazing work!");
+        out("Explore more with `lumi topics`, or just keep building and Lumi will teach new things as they appear.");
+        return 0;
+      }
+      const concept = CONCEPTS.find((c) => c.id === next.conceptId);
+      if (!concept) {
+        out("Couldn't pick your next concept — try `lumi topics` to choose one.");
+        return 1;
+      }
+      const cache = new JsonFileCache(join(home, "cache.json"));
+      const generator = deps.generator ?? new FallbackGenerator(new ClaudeCliGenerator(), new MockGenerator());
+      const lumi = new Lumi({ profile, cache, generator });
+      const lesson = await lumi.explain(concept.label);
+      if (!lesson) {
+        out(`Couldn't generate a lesson for "${concept.label}" right now — try again, or use \`lumi explain\`.`);
+        return 1;
+      }
+      out(`🎓 Today's concept: ${lesson.title}\n\n${lesson.plainExplanation}\nWhy it matters: ${lesson.whyItMatters}`);
+      if (lesson.analogy) out(`Think of it like: ${lesson.analogy}`);
+      if (lesson.tinyExample) out(`Example: ${lesson.tinyExample}`);
+      out(`Learn more: ${learnMoreUrl(concept)}`);
+      const upNext = relatedConcepts(lesson.conceptId, learnedBefore);
+      if (upNext.length > 0) out(`Up next: ${upNext.map((r) => `"${r.label}"`).join(", ")}`);
+      out("");
+      out("Run `lumi learn` again for the next one, or `lumi review` to lock in what you know.");
       return 0;
     }
     case "next": {
@@ -418,14 +505,22 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
       const input = deps.input ?? "";
       const risks = detectRisks(input);
       if (risks.length === 0) {
-        out("✅ No risky patterns spotted in that output.");
+        out("✅ No risky patterns spotted — note this is a fast pattern check, not a full security audit.");
         return 0;
       }
+      const high = risks.filter((r) => r.severity === "danger").length;
+      const medium = risks.filter((r) => r.severity === "warn").length;
+      const parts = [high > 0 ? `${high} high` : "", medium > 0 ? `${medium} medium` : ""].filter(Boolean);
+      out(`🔍 Found ${risks.length} security issue${risks.length === 1 ? "" : "s"}${parts.length ? `: ${parts.join(", ")}` : ""}`);
+      out("");
       for (const risk of risks) {
         const marker = risk.severity === "danger" ? "🚨" : risk.severity === "warn" ? "⚠️" : "ℹ️";
-        out(`${marker} ${risk.label} (${risk.severity})`);
-        out(`   ${riskLessonHint(risk.conceptId)}`);
+        out(`${marker} ${risk.label} (${severityLabel(risk.severity)})`);
+        out(`   ${riskAdvice(risk.conceptId)}`);
       }
+      out("");
+      out(`Learn to fix the top one:  lumi explain "${risks[0].label}"`);
+      out("Want a graded A–F report?  lumi audit");
       return 0;
     }
     case "audit": {
@@ -486,7 +581,7 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
           out("");
           out("Fix these first:");
           for (let i = 0; i < pr.topFixes.length; i++) {
-            out(`  ${i + 1}. ${pr.topFixes[i].split(/\.\s/)[0]}.`);
+            out(`  ${i + 1}. ${pr.topFixes[i]}`);
           }
         }
         return 0;
@@ -519,9 +614,7 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
         out("");
         out("Fix these first:");
         for (let i = 0; i < report.topFixes.length; i++) {
-          // Trim to first sentence for brevity in the CLI output
-          const firstSentence = report.topFixes[i].split(/\.\s/)[0] + ".";
-          out(`  ${i + 1}. ${firstSentence}`);
+          out(`  ${i + 1}. ${report.topFixes[i]}`);
         }
       }
       return 0;

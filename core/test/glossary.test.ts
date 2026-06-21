@@ -12,6 +12,9 @@ describe("renderGlossary", () => {
     // explains nothing learned yet
     expect(out.toLowerCase()).toContain("haven't");
     expect(out.toLowerCase()).toContain("yet");
+    // points the new user at concrete next actions instead of a dead end
+    expect(out).toContain("lumi learn");
+    expect(out).toContain("lumi topics");
   });
 
   it("groups learned concepts by category with labels, dates and seen counts", () => {
@@ -25,9 +28,9 @@ describe("renderGlossary", () => {
     expect(out.split("\n")[0]).toBe("# My Lumi Glossary");
     // one-line summary mentioning the count
     expect(out).toContain("3 concepts");
-    // category headers derived from CONCEPTS (git, web)
-    expect(out).toContain("## git");
-    expect(out).toContain("## web");
+    // category headers shown with friendly labels (not raw ids)
+    expect(out).toContain("## Git & version control");
+    expect(out).toContain("## Web & APIs");
     // labels looked up by id
     expect(out).toContain("Git commit");
     expect(out).toContain("Git branch");
@@ -35,8 +38,8 @@ describe("renderGlossary", () => {
     // a seen count and a date
     expect(out).toContain("seen 3×");
     expect(out).toContain("2026-01-02");
-    // categories sorted alphabetically: git before web
-    expect(out.indexOf("## git")).toBeLessThan(out.indexOf("## web"));
+    // categories sorted by friendly heading: Git before Web
+    expect(out.indexOf("## Git & version control")).toBeLessThan(out.indexOf("## Web & APIs"));
     // concepts sorted by label within git: "Git branch" before "Git commit"
     expect(out.indexOf("Git branch")).toBeLessThan(out.indexOf("Git commit"));
   });
@@ -93,8 +96,8 @@ describe("renderGlossary", () => {
     ];
     const out = renderGlossary(learned);
     // Existing assertions still hold
-    expect(out).toContain("## git");
-    expect(out).toContain("## web");
+    expect(out).toContain("## Git & version control");
+    expect(out).toContain("## Web & APIs");
     expect(out).toContain("Git commit");
     expect(out).toContain("seen 3×");
     expect(out).toContain("2026-01-02");

@@ -3,6 +3,7 @@ import {
   buildPolishPrompt,
   offlinePolish,
   runPrompt,
+  promptTips,
   FallbackPolisher,
   ClaudePolisher,
 } from "../src/prompt";
@@ -122,6 +123,38 @@ describe("offlinePolish", () => {
   });
 });
 
+// ─── promptTips (pure) ───────────────────────────────────────────────────────
+
+describe("promptTips", () => {
+  it("coaches a too-vague one-liner", () => {
+    const tips = promptTips("make an app");
+    expect(tips.length).toBeGreaterThan(0);
+    expect(tips[0].toLowerCase()).toContain("detail");
+  });
+
+  it("returns nothing for an empty idea", () => {
+    expect(promptTips("")).toEqual([]);
+    expect(promptTips("   ")).toEqual([]);
+  });
+
+  it("returns nothing for a long, detailed idea", () => {
+    const detailed =
+      "Build a Python script that reads a CSV of customers, removes duplicate rows, " +
+      "and writes a cleaned file so that I can import it into my mailing tool and verify " +
+      "the row count matches what I expect when it finishes running successfully today";
+    expect(promptTips(detailed)).toEqual([]);
+  });
+
+  it("suggests naming the platform when none is mentioned", () => {
+    const tips = promptTips("track my expenses each month and show totals");
+    expect(tips.join(" ").toLowerCase()).toMatch(/website|script|mobile app|kind of thing/);
+  });
+
+  it("never returns more than two tips", () => {
+    expect(promptTips("thing").length).toBeLessThanOrEqual(2);
+  });
+});
+
 // ─── runPrompt ───────────────────────────────────────────────────────────────
 
 describe("runPrompt", () => {
@@ -138,6 +171,26 @@ describe("runPrompt", () => {
     const output = lines.join("\n");
     expect(output).toContain("## Goal");
     expect(output).toContain("Build a todo app.");
+  });
+
+  it("appends 'next time' coaching tips for a vague idea", async () => {
+    const lines: string[] = [];
+    const code = await runPrompt("make an app", {
+      out: (s) => lines.push(s),
+      polish: async () => "## Goal\nDone.",
+    });
+    expect(code).toBe(0);
+    expect(lines.join("\n")).toContain("To get even better results next time");
+  });
+
+  it("does not append tips for a long, detailed idea", async () => {
+    const lines: string[] = [];
+    const detailed =
+      "Build a Python script that reads a CSV of customers, removes duplicate rows, " +
+      "and writes a cleaned file so that I can import it into my mailing tool and verify " +
+      "the row count matches what I expect when it finishes running successfully today";
+    await runPrompt(detailed, { out: (s) => lines.push(s), polish: async () => "## Goal\nDone." });
+    expect(lines.join("\n")).not.toContain("next time");
   });
 
   it("prints a clear delimiter around the polished prompt", async () => {

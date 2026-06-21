@@ -263,6 +263,34 @@ export function earnedBadges(learned: LearnedConcept[], streakDays: number): Bad
     .map(({ id, label, description }) => ({ id, label, description }));
 }
 
+export interface NextBadge {
+  id: string;
+  label: string;
+  remaining: number; // concepts still to learn to earn it
+}
+
+// Concept-count badge targets, in order. Kept in lockstep with BADGE_DEFS (a test
+// asserts each id exists and is earned at its target), so the "next badge" nudge
+// always matches a real badge.
+const CONCEPT_BADGE_TARGETS: Array<{ id: string; label: string; target: number }> = [
+  { id: "first-concept", label: "First Step", target: 1 },
+  { id: "concepts-10", label: "Getting Started", target: 10 },
+  { id: "concepts-25", label: "On a Roll", target: 25 },
+  { id: "concepts-50", label: "Knowledge Base", target: 50 },
+];
+
+/**
+ * The next concept-count badge the learner is working toward (a concrete goal for
+ * `lumi stats`), or null once all count badges are earned. Streak/category badges
+ * are intentionally excluded — "N more concepts" is the clearest single nudge.
+ */
+export function nextBadge(learnedCount: number): NextBadge | null {
+  for (const b of CONCEPT_BADGE_TARGETS) {
+    if (learnedCount < b.target) return { id: b.id, label: b.label, remaining: b.target - learnedCount };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Persistence — JsonFileHabitStore
 // ---------------------------------------------------------------------------

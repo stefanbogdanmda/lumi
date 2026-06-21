@@ -197,6 +197,9 @@ describe("runAdvise", () => {
     const all = lines.join("\n");
     // Should print an encouraging start-building message
     expect(all.toLowerCase()).toMatch(/start|build|run|first/);
+    // and offer concrete ways to begin right now
+    expect(all).toContain("lumi learn");
+    expect(all).toContain("lumi topics");
   });
 
   it("uses offlineAdvice as a fallback when no advise fn is injected and model is unavailable", async () => {

@@ -66,6 +66,21 @@ describe("runCli", () => {
     expect(text()).toContain("# My Lumi Glossary");
   });
 
+  it("glossary --out writes the glossary to a Markdown file", async () => {
+    seed("git-commit");
+    const outFile = join(home, "my-glossary.md");
+    const code = await runCli(["glossary", "--out", outFile], { home, out: sink });
+    expect(code).toBe(0);
+    expect(text()).toContain("Glossary written to");
+    expect(readFileSync(outFile, "utf8")).toContain("# My Lumi Glossary");
+  });
+
+  it("glossary --out with no file path returns 1 and usage", async () => {
+    const code = await runCli(["glossary", "--out"], { home, out: sink });
+    expect(code).toBe(1);
+    expect(text()).toContain("Usage: lumi glossary");
+  });
+
   it("review lists a concept that is due for a refresher", async () => {
     const old = new Date(Date.now() - 30 * dayMs).toISOString();
     const learned: LearnedConcept[] = [{ id: "git-commit", learnedAt: old, seenCount: 1 }];
@@ -74,6 +89,69 @@ describe("runCli", () => {
     expect(code).toBe(0);
     expect(text()).toContain("Time for a quick refresher on:");
     expect(text()).toContain("Git commit");
+  });
+
+  it("review caps a large backlog and shows how many more remain", async () => {
+    const old = new Date(Date.now() - 90 * dayMs).toISOString();
+    const ids = ["git-commit", "git-push", "git-branch", "git-merge", "git-pull", "repository", "pull-request"];
+    const learned: LearnedConcept[] = ids.map((id) => ({ id, learnedAt: old, seenCount: 1 }));
+    writeFileSync(join(home, "profile.json"), JSON.stringify(learned, null, 2), "utf8");
+    const code = await runCli(["review"], { home, out: sink });
+    expect(code).toBe(0);
+    // 7 due → shows 5 + "…and 2 more"
+    expect(text()).toMatch(/7 due/);
+    expect(text()).toContain("…and 2 more");
+    // recall questions: exactly 5 shown
+    const questionLines = text().split("\n").filter((l) => l.includes("Do you remember"));
+    expect(questionLines.length).toBe(5);
+  });
+
+  it("review --got advances the spaced-repetition clock and persists it", async () => {
+    const old = new Date(Date.now() - 30 * dayMs).toISOString();
+    const learned: LearnedConcept[] = [{ id: "git-commit", learnedAt: old, seenCount: 1 }];
+    writeFileSync(join(home, "profile.json"), JSON.stringify(learned, null, 2), "utf8");
+    const code = await runCli(["review", "--got", "git commit"], { home, out: sink });
+    expect(code).toBe(0);
+    expect(text()).toContain("marked reviewed");
+    const saved: LearnedConcept[] = JSON.parse(readFileSync(join(home, "profile.json"), "utf8"));
+    const gc = saved.find((c) => c.id === "git-commit")!;
+    expect(gc.seenCount).toBe(2); // remembered → interval grows
+    // and it's no longer due (clock reset to now)
+    const followUp = await runCli(["review"], { home, out: sink });
+    expect(followUp).toBe(0);
+  });
+
+  it("review --forgot resets the concept to the short review queue", async () => {
+    const old = new Date(Date.now() - 90 * dayMs).toISOString();
+    const learned: LearnedConcept[] = [{ id: "git-commit", learnedAt: old, seenCount: 4 }];
+    writeFileSync(join(home, "profile.json"), JSON.stringify(learned, null, 2), "utf8");
+    const code = await runCli(["review", "--forgot", "git commit"], { home, out: sink });
+    expect(code).toBe(0);
+    const saved: LearnedConcept[] = JSON.parse(readFileSync(join(home, "profile.json"), "utf8"));
+    expect(saved.find((c) => c.id === "git-commit")!.seenCount).toBe(1);
+    // forgot → offer to re-learn it right away
+    expect(text()).toContain('lumi explain "Git commit"');
+  });
+
+  it("review --got for an unlearned term returns 1", async () => {
+    const code = await runCli(["review", "--got", "git commit"], { home, out: sink });
+    expect(code).toBe(1);
+    expect(text()).toContain("haven't learned");
+  });
+
+  it("review --got with no term prints usage and returns 1", async () => {
+    const code = await runCli(["review", "--got"], { home, out: sink });
+    expect(code).toBe(1);
+    expect(text()).toContain("Usage: lumi review");
+  });
+
+  it("review listing shows how to record the result", async () => {
+    const old = new Date(Date.now() - 30 * dayMs).toISOString();
+    const learned: LearnedConcept[] = [{ id: "git-commit", learnedAt: old, seenCount: 1 }];
+    writeFileSync(join(home, "profile.json"), JSON.stringify(learned, null, 2), "utf8");
+    const code = await runCli(["review"], { home, out: sink });
+    expect(code).toBe(0);
+    expect(text()).toContain("lumi review --got");
   });
 
   it("review says caught up with a fresh/empty profile", async () => {
@@ -104,6 +182,17 @@ describe("runCli", () => {
     expect(profile.listLearned().map((c) => c.id)).toContain("git-commit");
   });
 
+  it("explain shows the beginner-friendly analogy when present", async () => {
+    const code = await runCli(["explain", "git commit"], {
+      home,
+      out: sink,
+      generator: new MockGenerator(),
+    });
+    expect(code).toBe(0);
+    // MockGenerator always includes an analogy — it should reach the learner
+    expect(text()).toContain("Think of it like:");
+  });
+
   it("explain shows a Related trail of sibling concepts", async () => {
     const code = await runCli(["explain", "git commit"], {
       home,
@@ -112,6 +201,21 @@ describe("runCli", () => {
     });
     expect(code).toBe(0);
     expect(text()).toContain("Related:");
+  });
+
+  it("learn teaches the next path concept and records it", async () => {
+    const code = await runCli(["learn"], { home, out: sink, generator: new MockGenerator() });
+    expect(code).toBe(0);
+    expect(text()).toContain("Today's concept");
+    const profile = new JsonFileProfile(join(home, "profile.json"));
+    expect(profile.listLearned().length).toBe(1);
+  });
+
+  it("learn run twice teaches two different concepts", async () => {
+    await runCli(["learn"], { home, out: sink, generator: new MockGenerator() });
+    await runCli(["learn"], { home, out: sink, generator: new MockGenerator() });
+    const profile = new JsonFileProfile(join(home, "profile.json"));
+    expect(profile.listLearned().length).toBe(2);
   });
 
   it("explain with no term returns 1", async () => {
@@ -312,6 +416,22 @@ describe("runCli", () => {
     expect(text()).not.toMatch(/🌱|🎉|🚀|🏆/);
   });
 
+  it("progress shows a forward nudge toward the next milestone", async () => {
+    seed("git-commit", "git-push", "git-branch");
+    await runCli(["progress"], { home, out: sink });
+    // 3 learned → 2 more to reach the next (Growing) milestone
+    expect(text()).toContain("🎯");
+    expect(text()).toMatch(/2 more concepts to reach the Growing level/);
+  });
+
+  it("progress shows no forward nudge once all milestones are reached", async () => {
+    const ids = Array.from({ length: 30 }, (_, i) => `c${i}`);
+    const learned = ids.map((id) => ({ id, learnedAt: new Date().toISOString(), seenCount: 1 }));
+    writeFileSync(join(home, "profile.json"), JSON.stringify(learned, null, 2), "utf8");
+    await runCli(["progress"], { home, out: sink });
+    expect(text()).not.toContain("🎯");
+  });
+
   it("doctor with claudeAvailable:true → output contains 'Lumi setup check' and 'Claude CLI found'", async () => {
     const code = await runCli(["doctor"], { home, out: sink, claudeAvailable: true });
     expect(code).toBe(0);
@@ -478,6 +598,18 @@ describe("runCli", () => {
     expect(text()).toMatch(/[Ee]nvironment variable|[Ss]ecret|[Ss]ecurity/);
   });
 
+  it("check shows a summary header, clean advice (no model directive), and next-step pointers", async () => {
+    const apiKeyInput = 'const apiKey = "sk-1234567890abcdef1234567890abcdef";';
+    const code = await runCli(["check"], { home, out: sink, input: apiKeyInput });
+    expect(code).toBe(0);
+    const output = text();
+    expect(output).toMatch(/Found \d+ security issue/);
+    expect(output).toContain("(high)"); // friendly severity word, not "danger"
+    expect(output).not.toMatch(/Explain this risk/i); // model directive stripped
+    expect(output).toContain("lumi explain");
+    expect(output).toContain("lumi audit");
+  });
+
   it("check reads deps.input exactly like feed does", async () => {
     // Provide via deps.input (not stdin)
     const code = await runCli(["check"], {
@@ -486,6 +618,16 @@ describe("runCli", () => {
     });
     expect(code).toBe(0);
     expect(text()).toContain("No risky patterns");
+  });
+
+  it("audit 'Fix these first' lists actionable fixes, not truncated descriptions", async () => {
+    const apiKeyInput = 'const apiKey = "sk-1234567890abcdef1234567890abcdef";';
+    const code = await runCli(["audit"], { home, out: sink, input: apiKeyInput });
+    expect(code).toBe(0);
+    const output = text();
+    expect(output).toContain("Fix these first:");
+    expect(output).toContain(".env"); // the actual fix action for a hardcoded secret
+    expect(output).not.toContain("This code contains a hardcoded secret"); // not the description
   });
 
   // ---------------------------------------------------------------------------
@@ -565,6 +707,14 @@ describe("runCli", () => {
     expect(code).toBe(0);
     // "First Step" badge is earned after learning 1 concept
     expect(text()).toContain("First Step");
+  });
+
+  it("stats shows a forward nudge toward the next badge", async () => {
+    seed("git-commit");
+    const code = await runCli(["stats"], { home, out: sink });
+    expect(code).toBe(0);
+    // 1 learned → 9 more to the "Getting Started" (10-concept) badge
+    expect(text()).toMatch(/🎯 9 more concepts to earn the "Getting Started" badge/);
   });
 
   it("stats shows today's goal progress when daily goal is set", async () => {

@@ -1,6 +1,7 @@
 import { LearnedConcept, Concept } from "./types";
 import { CONCEPTS } from "./concepts";
 import { learnMoreUrl } from "./learnmore";
+import { categoryLabel } from "./topics";
 
 const TITLE = "# My Lumi Glossary";
 
@@ -23,6 +24,9 @@ export function renderGlossary(
       "",
       "You haven't learned any concepts yet. As Lumi explains things while you build,",
       "they'll show up here so you can look them back up any time.",
+      "",
+      "Want to get started now? Run `lumi learn` to learn your first concept, or",
+      "`lumi topics` to browse what Lumi can teach.",
     ].join("\n");
   }
 
@@ -65,13 +69,16 @@ export function renderGlossary(
     `You've learned ${count} ${count === 1 ? "concept" : "concepts"}.`,
   ];
 
-  const categories = [...groups.keys()].sort((a, b) => a.localeCompare(b));
+  // Sort by the friendly heading so display order matches what the user reads.
+  const categories = [...groups.keys()].sort((a, b) =>
+    categoryLabel(a).localeCompare(categoryLabel(b)),
+  );
   for (const category of categories) {
     const items = groups
       .get(category)!
       .slice()
       .sort((a, b) => a.label.localeCompare(b.label));
-    lines.push("", `## ${category}`);
+    lines.push("", `## ${categoryLabel(category)}`);
     for (const item of items) {
       lines.push(
         `- **${item.label}** — learned ${isoDate(item.learnedAt)}, seen ${item.seenCount}×`,
