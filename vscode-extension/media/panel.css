@@ -96,3 +96,12 @@ button { margin-top: 8px; }
 /* ── Digest tab ─────────────────────────────────────────────── */
 .digest-heading { font-size: 12px; opacity: 0.8; margin-bottom: 8px; }
 #digestOutput { white-space: pre-wrap; font-size: 12px; line-height: 1.6; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: var(--vscode-textCodeBlock-background); }
+
+/* Security lens results in the Paste tab */
+.paste-risks { margin-top: 10px; }
+.paste-risks-head { font-size: 12px; font-weight: 600; margin: 0 0 6px; }
+.paste-risk { border-left: 3px solid var(--vscode-panel-border); padding: 5px 9px; margin: 6px 0; border-radius: 4px; background: var(--vscode-textCodeBlock-background); }
+.paste-risk-high { border-left-color: var(--vscode-errorForeground); }
+.paste-risk-medium { border-left-color: var(--vscode-editorWarning-foreground); }
+.paste-risk-label { font-size: 12px; font-weight: 600; }
+.paste-risk-advice { font-size: 11px; opacity: 0.85; margin-top: 2px; }

@@ -22,6 +22,9 @@ import {
   weeklyDigest,
   renderDigestText,
   isPro,
+  detectRisks,
+  riskAdvice,
+  severityLabel,
 } from "@lumi/core";
 import type { InboundMessage } from "./panelView";
 
@@ -164,7 +167,13 @@ export async function handleMessage(
           panelPost({ type: "lesson", lesson });
           lumi.markLearned(lesson.conceptId);
         }
-        panelPost({ type: "pasteResult", count: lessons.length });
+        // Security lens on the pasted code — parity with the web overlay's Paste tab.
+        const risks = detectRisks(msg.text).map((r) => ({
+          label: r.label,
+          severity: severityLabel(r.severity),
+          advice: riskAdvice(r.conceptId),
+        }));
+        panelPost({ type: "pasteResult", count: lessons.length, risks });
         postProgress(lumi, panelPost);
       } catch {
         panelPost({ type: "pasteResult", count: 0, error: "Something went wrong. Please try again." });

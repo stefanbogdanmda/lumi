@@ -6,8 +6,9 @@ import { lumiHome } from "./paths";
 import { levelFromCount } from "./level";
 import { renderGlossary } from "./glossary";
 import { dueForReview } from "./review";
-import { milestoneFor } from "./milestones";
+import { milestoneFor, nextMilestone } from "./milestones";
 import { readEventsSince, appendEvent, lessonEvent } from "./feed";
+import { detectRisks, riskAdvice, severityLabel } from "./risk";
 import { Lumi } from "./lumi";
 import { FallbackGenerator, ClaudeCliGenerator, MockGenerator } from "./generator";
 import { CONCEPTS } from "./concepts";
@@ -209,6 +210,7 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
           count,
           level: levelFromCount(count),
           milestone: milestoneFor(count),
+          nextMilestone: nextMilestone(count),
           streakDays,
         });
         return;
@@ -349,7 +351,14 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
             profile.markLearned(lesson.conceptId);
             count++;
           }
-          sendJson(res, 200, { count });
+          // Run the security lens on the same pasted output — the moment a beginner
+          // pastes AI-written code is exactly when risk-flagging matters most.
+          const risks = detectRisks(text).map((r) => ({
+            label: r.label,
+            severity: severityLabel(r.severity),
+            advice: riskAdvice(r.conceptId),
+          }));
+          sendJson(res, 200, { count, risks });
         } catch {
           sendJson(res, 500, { error: "paste failed" });
         }
