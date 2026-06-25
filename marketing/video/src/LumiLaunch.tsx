@@ -9,8 +9,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLORS, EASE, FONT, MONO, GLOW, SPRING, cardSurface } from "./theme";
+import { COLORS, EASE, FONT, MONO, GLOW, SPRING } from "./theme";
 import { SCENE, FEATURE_BEATS, PAYOFF_BEATS, beatPulse, hitEnv } from "./beats";
+import { SecurityScan } from "./components/SecurityScan";
 import { Background } from "./components/Background";
 import { Wordmark } from "./components/Wordmark";
 import { LumiSpark, SparkStar } from "./components/LumiSpark";
@@ -315,9 +316,9 @@ const ScenePayoff: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* ④ tells you what to build next */}
+      {/* ④ catches the risky bits — the security wedge */}
       <Sequence from={PAYOFF_BEATS[0].from} durationInFrames={PAYOFF_BEATS[0].dur} layout="none">
-        <PayoffNext dur={PAYOFF_BEATS[0].dur} width={width} portrait={portrait} />
+        <PayoffSafe dur={PAYOFF_BEATS[0].dur} width={width} portrait={portrait} />
       </Sequence>
 
       {/* the emotional one-liner into the CTA */}
@@ -328,68 +329,25 @@ const ScenePayoff: React.FC = () => {
   );
 };
 
-const PayoffNext: React.FC<{ dur: number; width: number; portrait: boolean }> = ({ dur, width, portrait }) => {
+const PayoffSafe: React.FC<{ dur: number; width: number; portrait: boolean }> = ({ dur, width, portrait }) => {
   const frame = useCurrentFrame();
   const op = sceneFade(frame, dur, 6, 12);
-  const flash = hitEnv(frame, 0, 18); // lands on the 20s lift impact
-  const cardW = Math.min(width * 0.86, portrait ? 900 : 880);
-
-  const steps = [
-    { t: "Add a few tests", w: "so changes don't break what works" },
-    { t: "Save your work with Git", w: "a snapshot you can always return to" },
-    { t: "Deploy it", w: "put it online for real people to use" },
-  ];
-
+  const flash = hitEnv(frame, 0, 18);
   return (
     <AbsoluteFill style={{ opacity: op }}>
-      <Bloom progress={flash * 0.7} color={COLORS.glow} size={portrait ? 1000 : 1300} style={{ left: "50%", top: "46%" }} />
+      <Bloom progress={flash * 0.7} color={COLORS.danger} size={portrait ? 1000 : 1300} style={{ left: "50%", top: "46%" }} />
       <Center style={{ gap: portrait ? 30 : 38, padding: 50 }}>
         <Reveal delay={2} y={18}>
-          <div style={eyebrowStyle(portrait ? 19 : 22)}>
-            <span style={{ opacity: 0.6 }}>04 — </span>Keep going
-          </div>
+          <div style={eyebrowStyle(portrait ? 19 : 22)}><span style={{ opacity: 0.6 }}>04 — </span>Stay safe</div>
         </Reveal>
         <Reveal delay={6} y={24} blur={6}>
           <div style={{ textAlign: "center" }}>
-            <KineticHeadline
-              text="It tells you what to build next."
-              accentWord="next"
-              accentColor={COLORS.glow}
-              stagger={3}
-              style={{ fontFamily: FONT, fontSize: portrait ? 54 : 68, fontWeight: 800, color: COLORS.ink, letterSpacing: "-0.025em", justifyContent: "center" }}
-            />
+            <KineticHeadline text="It catches the risky bits." accentWord="risky" accentColor={COLORS.danger} stagger={3}
+              style={{ fontFamily: FONT, fontSize: portrait ? 54 : 68, fontWeight: 800, color: COLORS.ink, letterSpacing: "-0.025em", justifyContent: "center" }} />
           </div>
         </Reveal>
         <Reveal delay={16} y={30} blur={8} scale={0.97}>
-          <div
-            style={{
-              width: cardW,
-              borderRadius: 22,
-              padding: portrait ? "28px 30px" : "32px 38px",
-              background: cardSurface(),
-              border: `1.5px solid ${COLORS.cardBorder}`,
-              boxShadow: "0 30px 90px rgba(0,0,0,0.5), 0 0 60px rgba(255,179,71,0.1)",
-              fontFamily: FONT,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <SparkStar size={24} color={COLORS.glow} />
-              <span style={{ fontFamily: MONO, fontSize: portrait ? 24 : 27, color: COLORS.teal, fontWeight: 600 }}>lumi next</span>
-            </div>
-            <StaggerGroup each={7} delay={22} spring={SPRING.enter} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {steps.map((s, i) => (
-                <StaggerItem key={s.t} index={i} y={20}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                    <span style={{ color: COLORS.glow, fontSize: portrait ? 26 : 30, fontWeight: 800, lineHeight: 1.2 }}>{i + 1}</span>
-                    <div>
-                      <div style={{ fontSize: portrait ? 28 : 32, fontWeight: 700, color: COLORS.ink }}>{s.t}</div>
-                      <div style={{ fontSize: portrait ? 22 : 24, color: COLORS.inkSoft, marginTop: 2 }}>— {s.w}</div>
-                    </div>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerGroup>
-          </div>
+          <SecurityScan width={Math.min(width * 0.86, portrait ? 900 : 880)} from={0} />
         </Reveal>
       </Center>
     </AbsoluteFill>
