@@ -27,12 +27,7 @@ const BEATS = {
 
 const useStage = () => {
   const { width, height } = useVideoConfig();
-  return {
-    width,
-    height,
-    portrait: height > width * 1.08,
-    square: Math.abs(width - height) < width * 0.08,
-  };
+  return { width, height };
 };
 
 /** Cross-fades each beat's opacity in then out so the loop rests on COLORS.bg0. */
@@ -42,7 +37,7 @@ const fade = (frame: number, dur: number, inN = 8, outN = 10) =>
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }),
-    interpolate(frame, [dur - outN, dur], [1, 0], {
+    interpolate(frame, [dur - outN, dur - 1], [1, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }),
