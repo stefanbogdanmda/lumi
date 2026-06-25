@@ -19,7 +19,7 @@
     "ide:wide": "remotion render LumiIdeLoopWide out/lumi-ide-16x9.mp4 --concurrency=4",
     "ide:webm": "remotion render LumiIdeLoopSquare out/lumi-ide-1x1.webm --codec=vp9 --concurrency=4",
     "ide:poster": "remotion still LumiIdeLoopSquare out/lumi-ide-poster.jpg --frame=120",
-    "ide:gif": "remotion render LumiIdeLoopWide out/lumi-ide.gif --codec=gif --every-nth-frame=2 --concurrency=4",
+    "ide:gif": "remotion render LumiIdeLoopWide out/lumi-ide.gif --codec=gif --scale=0.34 --every-nth-frame=3 --concurrency=4",
     "hero:mp4": "remotion render LumiLaunch out/lumi-hero-16x9.mp4 --concurrency=4",
     "hero:webm": "remotion render LumiLaunch out/lumi-hero-16x9.webm --codec=vp9 --concurrency=4",
     "hero:poster": "remotion still LumiLaunch out/lumi-hero-poster.jpg --frame=210",

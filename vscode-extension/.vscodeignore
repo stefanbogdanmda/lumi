@@ -4,3 +4,4 @@ esbuild.js
 **/*.ts
 node_modules/**
 !out/extension.js
+media/lumi-ide.gif
