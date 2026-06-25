@@ -51,6 +51,16 @@ collapseToggle.addEventListener("click", () => {
   collapseToggle.textContent = collapsed ? "▸" : "▾";
 });
 
+// ----- hero "Get started" -----
+const heroStart = document.getElementById("heroStart");
+if (heroStart) {
+  heroStart.addEventListener("click", () => {
+    const firstTab = document.querySelector('.tab[data-tab="lessons"]');
+    if (firstTab) firstTab.click();
+    document.getElementById("welcomeHero")?.classList.add("collapsed");
+  });
+}
+
 // ----- tabs -----
 function activateTab(tab) {
   activeTab = tab;
