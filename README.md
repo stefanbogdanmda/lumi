@@ -1,7 +1,7 @@
 # Lumi — your AI coding mini-teacher
 
 [![CI](https://github.com/stefanbogdanmda/lumi/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanbogdanmda/lumi/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Elastic 2.0](https://img.shields.io/badge/License-Elastic%202.0-blue.svg)](LICENSE)
 ![Tests](https://img.shields.io/badge/tests-1137%20passing-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
 
@@ -234,4 +234,4 @@ npm run build --workspace core  # produce core/dist
 
 ## License
 
-[MIT](LICENSE).
+Source-available under the [Elastic License 2.0](LICENSE) — free to use, modify, and self-host; you may not resell Lumi as a competing product or circumvent its license-key (Pro) features.
