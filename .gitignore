@@ -15,6 +15,9 @@ lumi-license-private.pem
 # Local test artefacts
 .lumi-test/
 
+# Brainstorming visual-companion scratch (superpowers)
+.superpowers/
+
 # Rendered marketing media (kept out of the code repo; render from marketing/video source)
 marketing/video/examples/
 marketing/video/public/audio/
