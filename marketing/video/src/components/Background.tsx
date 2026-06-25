@@ -2,7 +2,7 @@ import React from "react";
 import { useCurrentFrame, AbsoluteFill } from "remotion";
 import { COLORS } from "../theme";
 
-// Deep indigo night with slow-drifting glow blobs, subtle grid, animated
+// Deep espresso night with slow-drifting glow blobs, subtle grid, animated
 // film grain (~3–4% feTurbulence), and a warm top vignette rim.
 // `intensity` lifts the warmth for brighter scenes (reveal / CTA).
 export const Background: React.FC<{ intensity?: number }> = ({ intensity = 1 }) => {
@@ -35,14 +35,14 @@ export const Background: React.FC<{ intensity?: number }> = ({ intensity = 1 }) 
         }}
       />
 
-      {/* Lavender blob */}
+      {/* Warm gold blob */}
       <AbsoluteFill
         style={{
           background: `radial-gradient(34% 40% at ${drift(0.15, 7, 76)}% ${drift(
             0.19,
             7,
             68
-          )}%, rgba(167,139,250,${0.18 * intensity}) 0%, transparent 60%)`,
+          )}%, rgba(201,162,75,${0.18 * intensity}) 0%, transparent 60%)`,
           filter: "blur(8px)",
         }}
       />
