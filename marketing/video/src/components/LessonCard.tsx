@@ -1,5 +1,5 @@
 import React from "react";
-import { COLORS, FONT } from "../theme";
+import { COLORS, FONT, cardSurface } from "../theme";
 import { SparkStar } from "./LumiSpark";
 
 // The signature Lumi lesson card: spark icon + "Lumi — quick lesson", concept
@@ -24,8 +24,7 @@ export const LessonCard: React.FC<{
         transformOrigin: "center",
         borderRadius: 22,
         padding: "30px 34px",
-        background:
-          "linear-gradient(160deg, rgba(28,34,78,0.92) 0%, rgba(16,20,48,0.92) 100%)",
+        background: cardSurface(),
         border: `1.5px solid ${COLORS.cardBorder}`,
         boxShadow:
           "0 30px 90px rgba(0,0,0,0.5), 0 0 60px rgba(255,179,71,0.12), inset 0 1px 0 rgba(255,255,255,0.06)",
@@ -93,7 +92,7 @@ export const LessonCard: React.FC<{
             padding: "12px 24px",
             borderRadius: 12,
             color: learned ? "#0C2A14" : COLORS.glow,
-            background: learned ? COLORS.teal : "rgba(255,197,107,0.12)",
+            background: learned ? COLORS.teal : "rgba(255,194,75,0.12)",
             border: `1.5px solid ${learned ? COLORS.teal : COLORS.cardBorder}`,
             boxShadow: learned ? `0 0 26px ${COLORS.teal}66` : "none",
           }}

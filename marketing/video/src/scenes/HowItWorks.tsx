@@ -306,7 +306,7 @@ export const HowItWorks: React.FC = () => {
                   width: 420,
                   height: 390,
                   borderRadius: 16,
-                  background: "rgba(8,11,28,0.92)",
+                  background: COLORS.panel,
                   border: "1px solid rgba(255,255,255,0.09)",
                   padding: 24,
                   fontFamily: FONT,
