@@ -1,8 +1,10 @@
-# Lumi Panel (VS Code)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/stefanbogdanmda/lumi/main/vscode-extension/media/lumi-ide.gif" alt="Lumi teaching a concept and flagging a leaked secret" width="640">
+</p>
 
-A friendly side-panel that teaches you each NEW tech concept Claude Code uses, with a progress
-shelf of everything you've learned. Lessons are generated with your Claude subscription via the
-local `claude` command.
+# Lumi — understand what your AI builds
+
+A friendly side-panel that teaches the concept behind what your AI coding tool just did — **remembers** it across tools, **reviews** it so it sticks, and **flags risky code** before you ship. Built for non-technical builders.
 
 ## Setup
 1. Install this extension.
