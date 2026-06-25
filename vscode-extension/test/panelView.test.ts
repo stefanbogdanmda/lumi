@@ -77,3 +77,14 @@ describe("buildHtml", () => {
     expect(result).toBe("hello CSS world NONCE foo NONCE bar JS baz CSP");
   });
 });
+
+describe("panel CSP", () => {
+  it("substitutes the webview source into media-src so the welcome video can play", () => {
+    const raw = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; media-src __CSP_SOURCE__; img-src __CSP_SOURCE__; style-src __CSP_SOURCE__; script-src 'nonce-__NONCE__';"><link href="__CSS__"><script src="__JS__"></script>`;
+    const html = buildHtml(raw, "css:uri", "js:uri", "vscode-resource://abc", "NONCE123");
+    expect(html).toContain("media-src vscode-resource://abc");
+    expect(html).toContain("img-src vscode-resource://abc");
+    expect(html).toContain("style-src vscode-resource://abc");
+    expect(html).not.toContain("__CSP_SOURCE__");
+  });
+});

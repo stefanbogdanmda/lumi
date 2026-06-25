@@ -22,7 +22,7 @@ export function buildHtml(
   return rawHtml
     .replace("__CSS__", cssUri)
     .replace("__JS__", jsUri)
-    .replace("__CSP_SOURCE__", cspSource)
+    .replaceAll("__CSP_SOURCE__", cspSource)
     .replace(/__NONCE__/g, nonce);
 }
 
