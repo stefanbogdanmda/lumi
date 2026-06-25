@@ -9,7 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLORS, EASE, FONT, MONO, GLOW, SPRING } from "./theme";
+import { COLORS, EASE, FONT, MONO, GLOW, SPRING, cardSurface } from "./theme";
 import { SCENE, FEATURE_BEATS, PAYOFF_BEATS, beatPulse, hitEnv } from "./beats";
 import { Background } from "./components/Background";
 import { Wordmark } from "./components/Wordmark";
@@ -366,7 +366,7 @@ const PayoffNext: React.FC<{ dur: number; width: number; portrait: boolean }> = 
               width: cardW,
               borderRadius: 22,
               padding: portrait ? "28px 30px" : "32px 38px",
-              background: "linear-gradient(160deg, rgba(28,34,78,0.92), rgba(16,20,48,0.92))",
+              background: cardSurface(),
               border: `1.5px solid ${COLORS.cardBorder}`,
               boxShadow: "0 30px 90px rgba(0,0,0,0.5), 0 0 60px rgba(255,179,71,0.1)",
               fontFamily: FONT,
@@ -452,7 +452,7 @@ const SceneCta: React.FC<{ dur: number }> = ({ dur }) => {
               gap: 14,
               padding: "16px 28px",
               borderRadius: 14,
-              background: "rgba(8,11,28,0.85)",
+              background: COLORS.panel,
               border: `1px solid ${COLORS.cardBorder}`,
               boxShadow: `0 0 40px ${COLORS.glow}22`,
               fontFamily: MONO,

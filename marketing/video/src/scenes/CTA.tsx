@@ -189,7 +189,7 @@ export const CTA: React.FC = () => {
               color: COLORS.ink,
               padding: "18px 28px",
               borderRadius: 14,
-              background: "rgba(8,11,28,0.9)",
+              background: COLORS.panel,
               border: `1.5px solid rgba(255,197,107,${0.28 + cmdGlowOpacity * 1.5})`,
               boxShadow: `0 0 ${44 + pulseT * 28}px rgba(255,179,71,${cmdGlowOpacity}), 0 0 80px rgba(255,179,71,${cmdGlowOpacity * 0.5})`,
               position: "relative",

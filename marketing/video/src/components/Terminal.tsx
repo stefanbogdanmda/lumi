@@ -1,5 +1,5 @@
 import React from "react";
-import { COLORS, MONO, FONT } from "../theme";
+import { COLORS, MONO, FONT, cardSurface } from "../theme";
 
 export type Line = {
   text: string;
@@ -64,10 +64,10 @@ export const Terminal: React.FC<{
         width,
         borderRadius: 18,
         overflow: "hidden",
-        background: "rgba(8, 11, 28, 0.92)",
+        background: COLORS.panel,
         border: "1px solid rgba(255,255,255,0.09)",
         boxShadow:
-          "0 40px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset, 0 0 80px rgba(91,168,255,0.08)",
+          "0 40px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset, 0 0 80px rgba(255,179,71,0.08)",
         backdropFilter: "blur(8px)",
       }}
     >
