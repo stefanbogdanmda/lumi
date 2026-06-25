@@ -70,7 +70,7 @@ export const COLORS = {
 
 /** Card surface gradient — derive from tokens so re-themes touch one place. */
 export const cardSurface = () =>
-  "linear-gradient(160deg, rgba(51,38,15,0.94) 0%, rgba(31,22,10,0.94) 100%)";
+  `linear-gradient(160deg, rgba(51,38,15,0.94) 0%, ${COLORS.bg0}F0 100%)`;
 
 export const FONT =
   '"SF Pro Display", "Inter", -apple-system, "Segoe UI", system-ui, sans-serif';

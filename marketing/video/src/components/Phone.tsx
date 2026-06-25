@@ -13,7 +13,7 @@ export const Phone: React.FC<{
         width,
         height,
         borderRadius: width * 0.13,
-        background: "linear-gradient(160deg, #3A2A12, #1F160A)",
+        background: `linear-gradient(160deg, ${COLORS.bg2}, ${COLORS.bg0})`,
         border: "2px solid rgba(255,255,255,0.12)",
         boxShadow: "0 40px 110px rgba(0,0,0,0.6), 0 0 60px rgba(255,179,71,0.12)",
         padding: width * 0.035,

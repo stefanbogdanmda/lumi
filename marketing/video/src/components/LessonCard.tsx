@@ -92,7 +92,7 @@ export const LessonCard: React.FC<{
             padding: "12px 24px",
             borderRadius: 12,
             color: learned ? "#0C2A14" : COLORS.glow,
-            background: learned ? COLORS.teal : "rgba(255,194,75,0.12)",
+            background: learned ? COLORS.teal : `${COLORS.glow}1F`,
             border: `1.5px solid ${learned ? COLORS.teal : COLORS.cardBorder}`,
             boxShadow: learned ? `0 0 26px ${COLORS.teal}66` : "none",
           }}
