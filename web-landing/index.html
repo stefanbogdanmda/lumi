@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumi — understand what your AI builds</title>
+  <meta name="description" content="Lumi teaches the concept behind what your AI coding tool just did, remembers it across tools, reviews it, and flags risky code. For non-technical builders.">
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <span class="brand">🪄 Lumi</span>
+    <a class="nav-cta" href="#install">Add to VS Code</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <video class="hero-bg" autoplay muted loop playsinline
+             poster="assets/lumi-hero-poster.jpg" preload="metadata">
+        <source src="assets/lumi-hero-16x9.webm" type="video/webm">
+        <source src="assets/lumi-hero-16x9.mp4" type="video/mp4">
+      </video>
+      <div class="hero-overlay">
+        <h1>Build with AI — and understand what you shipped.</h1>
+        <p>Lumi rides inside your AI coding tool. It teaches each new concept in plain English, remembers it across tools, reviews it so it sticks, and flags risky code before you ship.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#install">Add to VS Code</a>
+          <a class="btn ghost" href="#install">Get the CLI</a>
+          <button id="unmute" class="btn icon" aria-pressed="false" aria-label="Unmute the video">🔊 Sound</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <article class="feature reveal"><h2>Learn</h2><p>A plain-English lesson the moment a concept appears — once, analogy-led, adapted to your level.</p></article>
+      <article class="feature reveal"><h2>Remember</h2><p>Cross-tool memory. Learn it in Cursor, and it's never re-taught in Claude Code.</p></article>
+      <article class="feature reveal"><h2>Review</h2><p>Spaced repetition with guess-before-reveal recall, so it actually sticks.</p></article>
+      <article class="feature reveal accent"><h2>Stay safe</h2><p>A security lens flags leaked keys, secrets in the frontend, and missing access control — and grades your AI's output A–F with fixes.</p></article>
+      <article class="feature reveal"><h2>Every surface</h2><p>One feed across inline, the web overlay, the VS Code panel, and the CLI.</p></article>
+      <article class="feature reveal"><h2>Keep going</h2><p>Streaks, badges, a shareable progress card, and a certificate.</p></article>
+    </section>
+
+    <section id="install" class="install">
+      <h2>Start in two minutes</h2>
+      <pre><code>npm install -g @lumi/core
+lumi setup --all</code></pre>
+      <a class="btn primary" href="https://marketplace.visualstudio.com/items?itemName=lumi-app.lumi-panel">Add to VS Code</a>
+    </section>
+  </main>
+
+  <footer class="foot">Local-first · runs on your existing AI subscription · MIT</footer>
+  <script src="main.js"></script>
+</body>
+</html>
