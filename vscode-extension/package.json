@@ -11,7 +11,7 @@
   "main": "./out/extension.js",
   "publisher": "lumi-app",
   "repository": { "type": "git", "url": "https://github.com/stefanbogdanmda/lumi" },
-  "license": "MIT",
+  "license": "Elastic-2.0",
   "contributes": {
     "views": {
       "explorer": [{ "id": "lumiPanel", "name": "Lumi", "type": "webview" }]

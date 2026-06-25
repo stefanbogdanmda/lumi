@@ -9,7 +9,7 @@
   "homepage": "https://github.com/stefanbogdanmda/lumi#readme",
   "repository": { "type": "git", "url": "git+https://github.com/stefanbogdanmda/lumi.git", "directory": "core" },
   "bugs": { "url": "https://github.com/stefanbogdanmda/lumi/issues" },
-  "license": "MIT",
+  "license": "Elastic-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": { "lumi": "dist/cli-bin.js" },

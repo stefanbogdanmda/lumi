@@ -30,4 +30,4 @@ Works with **Claude Code, Codex, Cursor, Gemini, Copilot, and OpenCode**, across
 
 Full docs, surfaces, and the complete command list: **[github.com/stefanbogdanmda/lumi](https://github.com/stefanbogdanmda/lumi)**.
 
-MIT licensed.
+Source-available under the [Elastic License 2.0](LICENSE) — free to use, modify, and self-host; you may not resell Lumi as a competing product or circumvent its license-key (Pro) features.
