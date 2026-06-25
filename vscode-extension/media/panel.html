@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src __CSP_SOURCE__; script-src 'nonce-__NONCE__';">
+    content="default-src 'none'; media-src __CSP_SOURCE__; img-src __CSP_SOURCE__; style-src __CSP_SOURCE__; script-src 'nonce-__NONCE__';">
+  <link rel="stylesheet" href="__TOKENS__">
   <link rel="stylesheet" href="__CSS__">
 </head>
 <body>
@@ -13,6 +14,18 @@
     <button id="collapseToggle" class="collapse-toggle" title="Collapse / expand">▾</button>
   </header>
   <div id="body" class="body">
+    <section id="welcomeHero" class="welcome-hero">
+      <video class="hero-video" autoplay muted loop playsinline
+             poster="__HERO_POSTER__" aria-hidden="true">
+        <source src="__HERO_WEBM__" type="video/webm">
+        <source src="__HERO_MP4__" type="video/mp4">
+      </video>
+      <div class="hero-copy">
+        <h1 class="hero-title">Understand what your AI builds.</h1>
+        <p class="hero-sub">Lumi teaches the concept behind each new thing your AI tool does — remembers it, reviews it, and flags risky code.</p>
+        <button id="heroStart" class="hero-cta">Get started</button>
+      </div>
+    </section>
     <nav class="tabs" id="tabs">
       <button class="tab" data-tab="lessons">Lessons</button>
       <button class="tab" data-tab="glossary">Glossary</button>
