@@ -6,6 +6,7 @@ import { COLORS, FONT, MONO, GLOW, EASE, SPRING, cardSurface } from "../theme";
  * Security lens beat: a leaked-secret line, a shield "scan" sweep across it,
  * a plain-English risk flag, and an A–F grade that settles from C to A.
  * `from` is the LOCAL frame the beat starts (default 0). Self-contained.
+ * Frame offsets assume fps === 30 (the project FPS).
  */
 export const SecurityScan: React.FC<{ width?: number; from?: number }> = ({
   width = 820,
@@ -22,7 +23,7 @@ export const SecurityScan: React.FC<{ width?: number; from?: number }> = ({
     easing: EASE.inOut,
   });
   // flag appears after the sweep
-  const flag = interpolate(frame, [42, 56], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const flag = interpolate(frame, [42, 56], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out });
   // grade lifts C(0)→A(1) late in the beat
   const fix = interpolate(frame, [64, 88], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out });
   const grade = fix < 0.5 ? "C" : fix < 0.9 ? "B" : "A";
@@ -51,7 +52,7 @@ export const SecurityScan: React.FC<{ width?: number; from?: number }> = ({
           fontFamily: MONO,
           fontSize: 28,
           color: COLORS.danger,
-          background: "rgba(42,18,12,0.9)",
+          background: `${COLORS.bg0}E6`,
           border: "1px solid rgba(255,107,87,0.3)",
           borderRadius: 12,
           padding: "16px 20px",
@@ -70,7 +71,7 @@ export const SecurityScan: React.FC<{ width?: number; from?: number }> = ({
             width: 90,
             transform: "translateX(-50%)",
             background: `linear-gradient(90deg, transparent, ${COLORS.glow}88, transparent)`,
-            opacity: sweep > 0 && sweep < 1 ? 1 : 0,
+            opacity: frame >= 10 && frame <= 42 ? 1 : 0,
           }}
         />
       </div>
