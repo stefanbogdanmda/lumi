@@ -1,0 +1,18 @@
+/* Lumi — Dark Warm Glow design tokens (shared with the web landing). */
+:root {
+  --lumi-bg0: #1F160A;
+  --lumi-bg1: #2E2113;
+  --lumi-bg2: #3A2A12;
+  --lumi-ink: #FFF1D6;
+  --lumi-ink-soft: #D8C49A;
+  --lumi-ink-faint: #9A865E;
+  --lumi-glow: #FFC24B;
+  --lumi-glow-hot: #E89A1C;
+  --lumi-amber-deep: #FF8A4C;
+  --lumi-teal: #5EE7C9;
+  --lumi-danger: #FF6B57;
+  --lumi-card-bg: rgba(51, 38, 15, 0.72);
+  --lumi-card-border: rgba(255, 194, 75, 0.22);
+  --lumi-radius: 12px;
+  --lumi-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
