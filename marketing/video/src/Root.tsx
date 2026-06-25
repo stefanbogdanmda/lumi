@@ -86,9 +86,9 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
       />
       {/* ── LumiIdeLoop — 14s seamless loop for VS Code panel + marketplace ── */}
-      {/* 16:9 — VS Code panel / marketplace hero */}
+      {/* 16:9 wide — VS Code panel / marketplace hero */}
       <Composition
-        id="LumiIdeLoop"
+        id="LumiIdeLoopWide"
         component={LumiIdeLoop}
         durationInFrames={LOOP}
         fps={FPS}
