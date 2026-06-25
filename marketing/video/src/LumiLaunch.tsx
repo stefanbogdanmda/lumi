@@ -346,9 +346,7 @@ const PayoffSafe: React.FC<{ dur: number; width: number; portrait: boolean }> = 
               style={{ fontFamily: FONT, fontSize: portrait ? 54 : 68, fontWeight: 800, color: COLORS.ink, letterSpacing: "-0.025em", justifyContent: "center" }} />
           </div>
         </Reveal>
-        <Reveal delay={16} y={30} blur={8} scale={0.97}>
-          <SecurityScan width={Math.min(width * 0.86, portrait ? 900 : 880)} from={0} />
-        </Reveal>
+        <SecurityScan width={Math.min(width * 0.86, portrait ? 900 : 880)} from={14} />
       </Center>
     </AbsoluteFill>
   );
