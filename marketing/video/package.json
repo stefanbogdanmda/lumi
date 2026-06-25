@@ -14,7 +14,16 @@
     "launch:16x9": "remotion render LumiLaunch out/lumi-launch-16x9.mp4 --concurrency=4",
     "launch:all": "npm run launch:9x16 && npm run launch:1x1 && npm run launch:16x9",
     "still": "remotion still LumiPromo out/frame.png",
-    "soundtrack": "node scripts/make-soundtrack.mjs"
+    "soundtrack": "node scripts/make-soundtrack.mjs",
+    "ide:square": "remotion render LumiIdeLoopSquare out/lumi-ide-1x1.mp4 --concurrency=4 --crf=30",
+    "ide:wide": "remotion render LumiIdeLoopWide out/lumi-ide-16x9.mp4 --concurrency=4",
+    "ide:webm": "remotion render LumiIdeLoopSquare out/lumi-ide-1x1.webm --codec=vp9 --concurrency=4",
+    "ide:poster": "remotion still LumiIdeLoopSquare out/lumi-ide-poster.jpg --frame=120",
+    "ide:gif": "remotion render LumiIdeLoopWide out/lumi-ide.gif --codec=gif --every-nth-frame=2 --concurrency=4",
+    "hero:mp4": "remotion render LumiLaunch out/lumi-hero-16x9.mp4 --concurrency=4",
+    "hero:webm": "remotion render LumiLaunch out/lumi-hero-16x9.webm --codec=vp9 --concurrency=4",
+    "hero:poster": "remotion still LumiLaunch out/lumi-hero-poster.jpg --frame=210",
+    "assets:copy": "node scripts/copy-assets.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.380",
