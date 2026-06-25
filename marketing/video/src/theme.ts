@@ -50,23 +50,27 @@ export const SCENES = {
 };
 
 export const COLORS = {
-  bg0: "#070A18",
-  bg1: "#0C1130",
-  bg2: "#141A44",
-  ink: "#F4F6FF",
-  inkSoft: "#AEB6DC",
-  inkFaint: "#6B74A0",
-  glow: "#FFC56B", // Lumi amber
-  glowHot: "#FFB347",
+  bg0: "#1F160A",
+  bg1: "#2E2113",
+  bg2: "#3A2A12",
+  ink: "#FFF1D6",
+  inkSoft: "#D8C49A",
+  inkFaint: "#9A865E",
+  glow: "#FFC24B",      // Lumi amber
+  glowHot: "#E89A1C",
   amberDeep: "#FF8A4C",
-  teal: "#5EE7C9",
-  lavender: "#A78BFA",
-  blue: "#5BA8FF",
-  danger: "#FF6B81",
-  cardBg: "rgba(20, 26, 68, 0.72)",
-  cardBorder: "rgba(255, 197, 107, 0.28)",
-  panel: "rgba(10, 14, 38, 0.82)",
-};
+  teal: "#5EE7C9",      // kept for "learned"/streak success accents
+  lavender: "#C9A24B",  // warmed (was cold violet)
+  blue: "#E0A93E",      // warmed (was cold blue)
+  danger: "#FF6B57",
+  cardBg: "rgba(51, 38, 15, 0.72)",
+  cardBorder: "rgba(255, 194, 75, 0.22)",
+  panel: "rgba(20, 14, 6, 0.82)",
+} as const;
+
+/** Card surface gradient — derive from tokens so re-themes touch one place. */
+export const cardSurface = () =>
+  "linear-gradient(160deg, rgba(51,38,15,0.94) 0%, rgba(31,22,10,0.94) 100%)";
 
 export const FONT =
   '"SF Pro Display", "Inter", -apple-system, "Segoe UI", system-ui, sans-serif';
@@ -74,4 +78,4 @@ export const MONO =
   '"SF Mono", "JetBrains Mono", "Fira Code", "Menlo", monospace';
 
 // Lumi glow gradient used for accents and the spark.
-export const GLOW_GRADIENT = `linear-gradient(135deg, ${COLORS.glow} 0%, ${COLORS.amberDeep} 60%, ${COLORS.lavender} 120%)`;
+export const GLOW_GRADIENT = `linear-gradient(135deg, ${COLORS.glow} 0%, ${COLORS.amberDeep} 60%, ${COLORS.glowHot} 120%)`;
