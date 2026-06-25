@@ -6,6 +6,7 @@ if (video && unmute) {
     video.muted = !video.muted;
     const on = !video.muted;
     unmute.setAttribute("aria-pressed", String(on));
+    unmute.setAttribute("aria-label", on ? "Mute the video" : "Unmute the video");
     unmute.textContent = on ? "🔇 Mute" : "🔊 Sound";
     if (on) video.play().catch(() => {});
   });
