@@ -49,7 +49,17 @@ export class LumiPanel implements vscode.WebviewViewProvider {
     const css = webview.asWebviewUri(vscode.Uri.joinPath(media, "panel.css"));
     const js = webview.asWebviewUri(vscode.Uri.joinPath(media, "panel.js"));
     const nonce = getNonce();
+    const tokens = webview.asWebviewUri(vscode.Uri.joinPath(media, "tokens.css"));
+    const heroMp4 = webview.asWebviewUri(vscode.Uri.joinPath(media, "lumi-ide-1x1.mp4"));
+    const heroWebm = webview.asWebviewUri(vscode.Uri.joinPath(media, "lumi-ide-1x1.webm"));
+    const heroPoster = webview.asWebviewUri(vscode.Uri.joinPath(media, "lumi-ide-poster.jpg"));
     const rawHtml = fs.readFileSync(vscode.Uri.joinPath(media, "panel.html").fsPath, "utf8");
-    return buildHtml(rawHtml, css.toString(), js.toString(), webview.cspSource, nonce);
+    let out = buildHtml(rawHtml, css.toString(), js.toString(), webview.cspSource, nonce);
+    out = out
+      .replaceAll("__TOKENS__", tokens.toString())
+      .replaceAll("__HERO_MP4__", heroMp4.toString())
+      .replaceAll("__HERO_WEBM__", heroWebm.toString())
+      .replaceAll("__HERO_POSTER__", heroPoster.toString());
+    return out;
   }
 }
