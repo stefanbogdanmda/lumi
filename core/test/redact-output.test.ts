@@ -36,10 +36,28 @@ describe("redactSecrets — free-form output hardening", () => {
     expect(out).not.toContain(R);
   });
 
-  it("redacts PII: email and a Luhn-valid card number", () => {
+  it("redacts PII: email and a card-like number", () => {
     const out = redactSecrets("contact a.user@example.com card 4242 4242 4242 4242 end");
     expect(out).not.toContain("a.user@example.com");
     expect(out).not.toContain("4242 4242 4242 4242");
     expect(out).toContain("end");
+  });
+
+  it("does not hang on many unterminated BEGIN markers (ReDoS guard)", () => {
+    const evil = "-----BEGIN PRIVATE KEY-----\n".repeat(16000); // no END markers
+    const start = Date.now();
+    redactSecrets(evil);
+    expect(Date.now() - start).toBeLessThan(500); // ms
+  });
+
+  it("still redacts a real CERTIFICATE block", () => {
+    const cert =
+      "-----BEGIN CERTIFICATE-----\n" +
+      "MIIB" + "z".repeat(60) + "\n" +
+      "-----END CERTIFICATE-----";
+    const out = redactSecrets("cert:\n" + cert + "\nok");
+    expect(out).toContain("[REDACTED]");
+    expect(out).not.toContain("BEGIN CERTIFICATE");
+    expect(out).toContain("ok");
   });
 });

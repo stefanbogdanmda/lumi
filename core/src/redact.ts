@@ -19,8 +19,20 @@ interface Rule {
 // NOTE: every `re` MUST be global (`g`) so String.replace swaps all matches.
 const RULES: Rule[] = [
   // Multi-line private-key / certificate blocks: collapse the whole armored body.
+  // ReDoS-hardened three ways against attacker-influenceable stdout:
+  //   1. label classes are bounded ({0,40});
+  //   2. the body is length-capped ({0,8000}?) — a real PEM/cert body fits well
+  //      under this;
+  //   3. the body is *tempered* — `(?!-----(?:BEGIN|END))` forbids it from
+  //      spanning the next armor marker. Without (3), output full of
+  //      unterminated `-----BEGIN …-----` markers makes every BEGIN scan up to
+  //      8000 chars forward looking for an END that never comes (~1s on a 450KB
+  //      input); tempering makes each dead BEGIN fail after a single char, so
+  //      the rule stays linear with a tiny constant. A legitimate PEM body never
+  //      contains another armor line, so coverage (incl. encrypted DEK-Info
+  //      keys) is unaffected.
   {
-    re: /-----BEGIN [A-Z0-9 ]*?(?:PRIVATE KEY|CERTIFICATE)-----[\s\S]*?-----END [A-Z0-9 ]*?(?:PRIVATE KEY|CERTIFICATE)-----/g,
+    re: /-----BEGIN [A-Z0-9 ]{0,40}(?:PRIVATE KEY|CERTIFICATE)-----(?:(?!-----(?:BEGIN|END))[\s\S]){0,8000}?-----END [A-Z0-9 ]{0,40}(?:PRIVATE KEY|CERTIFICATE)-----/g,
     replace: PLACEHOLDER,
   },
 
