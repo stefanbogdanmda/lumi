@@ -130,6 +130,49 @@ describe("Lumi.processOutput", () => {
   });
 });
 
+describe("Lumi.definitionFor", () => {
+  it("returns the cached lesson's explanation + analogy for a learned concept", async () => {
+    const profile = new InMemoryProfile();
+    const cache = new InMemoryCache();
+    const gen = {
+      generate: async (c: any) => ({
+        conceptId: c.id,
+        title: c.label,
+        plainExplanation: "A commit saves a snapshot.",
+        whyItMatters: "y",
+        analogy: "a save point",
+      }),
+    };
+    const lumi = new Lumi({ profile, generator: gen, cache });
+    // Beginner level (0 learned) → caches under "git-commit:beginner".
+    await lumi.explain("Git commit");
+    const def = lumi.definitionFor("git-commit");
+    expect(def.definition).toBe("A commit saves a snapshot.");
+    expect(def.analogy).toBe("a save point");
+  });
+
+  it("returns empty when nothing is cached for the concept", () => {
+    const lumi = makeLumi();
+    expect(lumi.definitionFor("git-commit")).toEqual({});
+  });
+
+  it("finds a lesson cached at any level (not just the current one)", () => {
+    const profile = new InMemoryProfile();
+    const cache = new InMemoryCache();
+    // Seed a lesson at the "confident" level directly in the cache.
+    cache.set("docker:confident", {
+      conceptId: "docker",
+      title: "Docker",
+      plainExplanation: "Docker packages an app with its environment.",
+      whyItMatters: "y",
+    });
+    const lumi = new Lumi({ profile, generator: new MockGenerator(), cache });
+    const def = lumi.definitionFor("docker");
+    expect(def.definition).toBe("Docker packages an app with its environment.");
+    expect(def.analogy).toBeUndefined();
+  });
+});
+
 describe("Lumi.review", () => {
   it("review(id, true) bumps seenCount for a learned concept", async () => {
     const lumi = makeLumi();

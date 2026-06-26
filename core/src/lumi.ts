@@ -79,6 +79,26 @@ export class Lumi {
   markLearned(id: string): void { this.profile.markLearned(id); }
   listLearned(): LearnedConcept[] { return this.profile.listLearned(); }
 
+  /**
+   * Look up a cached definition + analogy for a concept, for the glossary.
+   * Lessons are cached per (concept, level); we try each level and return the
+   * first hit's plain explanation (as the definition) and analogy. Returns an
+   * empty object when nothing is cached — definitions are optional.
+   */
+  definitionFor(conceptId: string): { definition?: string; analogy?: string } {
+    const levels: LearnerLevel[] = ["beginner", "growing", "confident"];
+    for (const level of levels) {
+      const lesson = this.cache.get(`${conceptId}:${level}`);
+      if (lesson) {
+        return {
+          ...(lesson.plainExplanation ? { definition: lesson.plainExplanation } : {}),
+          ...(lesson.analogy ? { analogy: lesson.analogy } : {}),
+        };
+      }
+    }
+    return {};
+  }
+
   /** Record a spaced-review attempt (remembered → reinforce; forgotten → relearn). */
   review(id: string, remembered: boolean): void {
     this.profile.review(id, remembered);

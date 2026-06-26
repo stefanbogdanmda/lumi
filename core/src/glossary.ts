@@ -10,6 +10,66 @@ function isoDate(learnedAt: string): string {
   return learnedAt.slice(0, 10);
 }
 
+/** A structured glossary entry for the interactive overlay glossary. */
+export interface GlossaryEntry {
+  id: string;
+  label: string;
+  category: string;
+  categoryLabel: string;
+  learnedAt: string; // YYYY-MM-DD
+  seenCount: number;
+  learnMore: string;
+  definition?: string;
+  analogy?: string;
+}
+
+/**
+ * Optional source of a cached definition/analogy for a concept id.
+ * Returns empty when nothing is cached — definitions stay optional.
+ */
+export type DefinitionLookup = (
+  conceptId: string,
+) => { definition?: string; analogy?: string };
+
+/**
+ * Build a structured, sorted list of glossary entries from a user's learned
+ * concepts. Definitions are optional and sourced via `defLookup` (e.g. from the
+ * cached lesson for that concept). Pure: no I/O. Stable ordering — by friendly
+ * category label, then by concept label — so it mirrors `renderGlossary`.
+ */
+export function buildGlossaryEntries(
+  learned: LearnedConcept[],
+  defLookup?: DefinitionLookup,
+  concepts: Concept[] = CONCEPTS,
+): GlossaryEntry[] {
+  const byId = new Map<string, Concept>();
+  for (const c of concepts) byId.set(c.id, c);
+
+  const entries: GlossaryEntry[] = learned.map((l) => {
+    const concept = byId.get(l.id);
+    const category = concept?.category ?? "other";
+    const label = concept?.label ?? l.id;
+    const def = defLookup ? defLookup(l.id) : undefined;
+    return {
+      id: l.id,
+      label,
+      category,
+      categoryLabel: categoryLabel(category),
+      learnedAt: isoDate(l.learnedAt),
+      seenCount: l.seenCount,
+      learnMore: learnMoreUrl({ label, category }),
+      ...(def?.definition ? { definition: def.definition } : {}),
+      ...(def?.analogy ? { analogy: def.analogy } : {}),
+    };
+  });
+
+  return entries.sort(
+    (a, b) =>
+      a.categoryLabel.localeCompare(b.categoryLabel) ||
+      a.label.localeCompare(b.label),
+  );
+}
+
 /**
  * Render a user's learned concepts as a friendly, deterministic Markdown glossary.
  * Pure: no I/O, stable ordering (categories alphabetical, concepts by label).

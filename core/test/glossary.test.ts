@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { renderGlossary } from "../src/glossary";
+import { renderGlossary, buildGlossaryEntries } from "../src/glossary";
 import { learnMoreUrl } from "../src/learnmore";
 import { CONCEPTS } from "../src/concepts";
 import { Concept, LearnedConcept } from "../src/types";
@@ -103,5 +103,95 @@ describe("renderGlossary", () => {
     expect(out).toContain("2026-01-02");
     // And learn-more links present
     expect(out).toContain("Learn more:");
+  });
+});
+
+describe("buildGlossaryEntries", () => {
+  it("returns an empty array when nothing is learned", () => {
+    expect(buildGlossaryEntries([])).toEqual([]);
+  });
+
+  it("builds a structured entry per learned concept with metadata", () => {
+    const learned: LearnedConcept[] = [
+      { id: "git-commit", learnedAt: "2026-01-02T10:00:00.000Z", seenCount: 3 },
+    ];
+    const entries = buildGlossaryEntries(learned);
+    expect(entries).toHaveLength(1);
+    const e = entries[0];
+    expect(e.id).toBe("git-commit");
+    expect(e.label).toBe("Git commit");
+    expect(e.category).toBe("git");
+    expect(e.categoryLabel).toBe("Git & version control");
+    // learnedAt is normalized to YYYY-MM-DD
+    expect(e.learnedAt).toBe("2026-01-02");
+    expect(e.seenCount).toBe(3);
+    expect(e.learnMore).toContain("https");
+    // No defLookup provided → no definition/analogy keys
+    expect(e.definition).toBeUndefined();
+    expect(e.analogy).toBeUndefined();
+  });
+
+  it("sorts entries by category label, then by concept label", () => {
+    const learned: LearnedConcept[] = [
+      { id: "api", learnedAt: "2026-02-15T08:30:00.000Z", seenCount: 1 },
+      { id: "git-commit", learnedAt: "2026-01-02T10:00:00.000Z", seenCount: 3 },
+      { id: "git-branch", learnedAt: "2026-01-05T12:00:00.000Z", seenCount: 2 },
+    ];
+    const entries = buildGlossaryEntries(learned);
+    const labels = entries.map((e) => e.label);
+    // Git (category "Git & version control") before Web ("Web & APIs"),
+    // and within Git, "Git branch" before "Git commit".
+    expect(labels).toEqual(["Git branch", "Git commit", "API"]);
+  });
+
+  it("attaches a definition + analogy when a lookup supplies them", () => {
+    const learned: LearnedConcept[] = [
+      { id: "git-commit", learnedAt: "2026-01-02T10:00:00.000Z", seenCount: 1 },
+    ];
+    const entries = buildGlossaryEntries(learned, () => ({
+      definition: "A commit saves a snapshot of your work.",
+      analogy: "a save point in a video game",
+    }));
+    expect(entries[0].definition).toBe("A commit saves a snapshot of your work.");
+    expect(entries[0].analogy).toBe("a save point in a video game");
+  });
+
+  it("renders gracefully (no keys) when the lookup returns empty", () => {
+    const learned: LearnedConcept[] = [
+      { id: "git-commit", learnedAt: "2026-01-02T10:00:00.000Z", seenCount: 1 },
+    ];
+    const entries = buildGlossaryEntries(learned, () => ({}));
+    expect(entries[0].definition).toBeUndefined();
+    expect(entries[0].analogy).toBeUndefined();
+  });
+
+  it("falls back to category 'other' and raw id for an unknown concept", () => {
+    const learned: LearnedConcept[] = [
+      { id: "totally-unknown-thing", learnedAt: "2026-03-01T00:00:00.000Z", seenCount: 1 },
+    ];
+    const entries = buildGlossaryEntries(learned);
+    expect(entries[0].category).toBe("other");
+    expect(entries[0].label).toBe("totally-unknown-thing");
+    expect(entries[0].categoryLabel).toBe("other");
+  });
+
+  it("accepts a custom concepts list", () => {
+    const concepts: Concept[] = [
+      { id: "x", label: "Thing X", category: "custom", matchers: [] },
+    ];
+    const learned: LearnedConcept[] = [
+      { id: "x", learnedAt: "2026-04-01T00:00:00.000Z", seenCount: 1 },
+    ];
+    const entries = buildGlossaryEntries(learned, undefined, concepts);
+    expect(entries[0].label).toBe("Thing X");
+    expect(entries[0].category).toBe("custom");
+  });
+
+  it("security concepts get an OWASP learn-more link", () => {
+    const learned: LearnedConcept[] = [
+      { id: "hardcoded-secret", learnedAt: "2026-05-01T00:00:00.000Z", seenCount: 1 },
+    ];
+    const entries = buildGlossaryEntries(learned);
+    expect(entries[0].learnMore).toContain("OWASP");
   });
 });

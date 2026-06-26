@@ -20,112 +20,113 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── Dark Warm Glow — the default, unconditional brand palette ──────
+       Espresso + amber + cream. Not gated on prefers-color-scheme: this is
+       a branded pinned tool, not an OS-themed page. Tokens mirror the
+       desktop-overlay loader (#1a1411 / #e8a13a / #f3e9dd). */
     :root {
-      --bg: #1e1e2e;
-      --surface: #27273a;
-      --surface2: #313147;
-      --border: #3d3d5c;
-      --accent: #a78bfa;
-      --accent-dim: #7c5cbf;
-      --text: #e2e2f0;
-      --text-muted: #8888aa;
-      --green: #4ade80;
-      --radius: 12px;
-      --shadow: 0 8px 32px rgba(0,0,0,0.55);
-      --header-h: 44px;
-      --tab-h: 36px;
-      --transition: 0.18s ease;
-    }
-
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #f5f3ff;
-        --surface: #ffffff;
-        --surface2: #ede9fe;
-        --border: #c4b5fd;
-        --accent: #7c3aed;
-        --accent-dim: #5b21b6;
-        --text: #1e1b4b;
-        --text-muted: #6b7280;
-        --shadow: 0 8px 32px rgba(100,80,200,0.18);
-      }
+      --backdrop: #120d0b;                       /* behind a centered widget   */
+      --bg: #1a1411;                             /* espresso widget surface    */
+      --surface: #241a15;                        /* raised surface             */
+      --surface2: #2e211a;                       /* deeper raised surface      */
+      --border: rgba(243, 233, 221, 0.10);       /* warm low-opacity cream     */
+      --border-strong: rgba(243, 233, 221, 0.18);
+      --accent: #e8a13a;                          /* amber                      */
+      --accent-dim: #c8842a;                      /* darker amber (hover)       */
+      --accent-soft: rgba(232, 161, 58, 0.14);    /* amber focus ring / tint    */
+      --on-accent: #1a1411;                       /* espresso text on amber     */
+      --text: #f3e9dd;                            /* cream                      */
+      --text-muted: #b8a797;                      /* muted warm                 */
+      --green: #5fd093;                           /* AA-safe success on dark    */
+      --radius: 14px;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+      --header-h: 48px;
+      --tab-h: 42px;
+      --transition: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     html, body {
       height: 100%;
-      background: transparent;
+      background: var(--backdrop);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       font-size: 14px;
       color: var(--text);
+      -webkit-font-smoothing: antialiased;
     }
+    body { display: flex; justify-content: center; }
 
-    /* ── Floating widget shell ─────────────────────────────────────────── */
+    /* ── Widget shell ──────────────────────────────────────────────────
+       Fills its window. In a narrow desktop window width:100% = the window;
+       in a wide browser tab the width caps at 560px and centers, so it never
+       stretches absurdly. No fixed offsets, no rounded clipping. */
     #widget {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      width: 420px;
-      max-height: calc(100vh - 32px);
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: 100%;
       display: flex;
       flex-direction: column;
       background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
       box-shadow: var(--shadow);
       overflow: hidden;
-      transition: width var(--transition);
     }
-    #widget.wide {
-      width: 620px;
-    }
-    #widget.collapsed #widget-body {
-      display: none;
+    /* faint amber atmosphere bleeding down from the top */
+    #widget::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 180px;
+      background: radial-gradient(120% 100% at 50% 0%, rgba(232, 161, 58, 0.10), transparent 72%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     /* ── Header ────────────────────────────────────────────────────────── */
     #widget-header {
+      position: relative;
+      z-index: 1;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       height: var(--header-h);
-      padding: 0 12px;
-      background: var(--surface);
+      padding: 0 16px;
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       user-select: none;
-      -webkit-app-region: drag; /* lets the header drag the frameless native (Tauri) window; ignored in a browser */
     }
+    #brand-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 14px 3px rgba(232, 161, 58, 0.55);
+      flex-shrink: 0;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: .5; transform: scale(.9); } 50% { opacity: 1; transform: scale(1); } }
     #header-title {
       flex: 1;
+      min-width: 0;
       font-weight: 700;
-      font-size: 15px;
-      color: var(--accent);
-      letter-spacing: 0.01em;
+      font-size: 16px;
+      color: var(--text);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .chrome-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--surface2);
+    #header-title .tagline {
       color: var(--text-muted);
-      cursor: pointer;
-      -webkit-app-region: no-drag; /* keep chrome buttons clickable inside the draggable header */
-      font-size: 13px;
-      line-height: 1;
-      transition: background var(--transition), color var(--transition);
-    }
-    .chrome-btn:hover {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.01em;
     }
 
     /* ── Body ──────────────────────────────────────────────────────────── */
     #widget-body {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       flex: 1;
@@ -133,59 +134,88 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       overflow: hidden;
     }
 
-    /* ── Tabs ──────────────────────────────────────────────────────────── */
+    /* ── Tab navigation — a horizontal strip with gradient fade edges ──── */
+    #tab-nav {
+      position: relative;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    #tab-nav::before,
+    #tab-nav::after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 1px;
+      width: 32px;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    #tab-nav::before { left: 0;  background: linear-gradient(to right, var(--bg), transparent); }
+    #tab-nav::after  { right: 0; background: linear-gradient(to left,  var(--bg), transparent); }
+    #tab-nav.fade-left::before  { opacity: 1; }
+    #tab-nav.fade-right::after   { opacity: 1; }
+
     #tab-bar {
       display: flex;
+      gap: 2px;
+      align-items: stretch;
       height: var(--tab-h);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      padding: 0 10px;
       overflow-x: auto;
+      overflow-y: hidden;
       flex-wrap: nowrap;
-      /* Hide scrollbar on WebKit / Blink while keeping momentum scroll */
+      scroll-behavior: smooth;
+      scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
     }
-    #tab-bar::-webkit-scrollbar {
-      height: 3px;
-    }
-    #tab-bar::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
-    }
-    #tab-bar::-webkit-scrollbar-track {
-      background: transparent;
-    }
+    #tab-bar::-webkit-scrollbar { height: 0; width: 0; display: none; }
+
     .tab-btn {
+      position: relative;
       flex: 0 0 auto;
       background: none;
       border: none;
-      border-bottom: 2px solid transparent;
       color: var(--text-muted);
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: color var(--transition), border-color var(--transition);
-      padding: 0 10px;
+      padding: 0 13px;
       white-space: nowrap;
+      letter-spacing: 0.01em;
+      transition: color var(--transition);
     }
-    .tab-btn:hover {
-      color: var(--text);
+    .tab-btn::after {
+      content: "";
+      position: absolute;
+      left: 13px; right: 13px;
+      bottom: 7px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--accent);
+      box-shadow: 0 0 10px 1px rgba(232, 161, 58, 0.6);
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform var(--transition);
     }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn:focus-visible { outline: none; color: var(--text); }
+    .tab-btn:focus-visible::after { transform: scaleX(0.5); background: var(--border-strong); box-shadow: none; }
     .tab-btn.active {
       color: var(--accent);
-      border-bottom-color: var(--accent);
+      text-shadow: 0 0 18px rgba(232, 161, 58, 0.45);
     }
+    .tab-btn.active::after { transform: scaleX(1); }
 
     /* ── Tab panels ────────────────────────────────────────────────────── */
     #tab-content {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
+      padding: 16px;
     }
     .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    .tab-panel.active { display: block; animation: panel-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes panel-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 
     /* ── Cards ─────────────────────────────────────────────────────────── */
     .card {
@@ -218,12 +248,76 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     /* analogy / example in lighter tone */
     .card-section.muted p { color: var(--text-muted); font-style: italic; }
 
+    /* ── Command-failure card (terminal) ──────────────────────────────── */
+    .failure-card {
+      border-color: rgba(232, 161, 58, 0.45);
+      border-left: 3px solid var(--accent);
+    }
+    .failure-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .failure-badge {
+      flex: 1;
+      font-weight: 700;
+      font-size: 13.5px;
+      color: var(--accent);
+    }
+    .failure-dismiss {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: color var(--transition), background var(--transition);
+    }
+    .failure-dismiss:hover { color: var(--text); background: var(--surface2); }
+    .failure-cmd {
+      font-family: ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
+      font-size: 12.5px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 9px;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .failure-exit {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 4px;
+      padding: 1px 7px;
+    }
+    .failure-cwd { color: var(--text-muted); font-size: 11px; margin-left: 8px; }
+    .failure-body { margin-top: 8px; line-height: 1.55; color: var(--text); }
+    .failure-body p { margin: 0; }
+    .failure-why { color: var(--text-muted); font-size: 12.5px; margin-top: 6px; line-height: 1.5; }
+
     /* ── Empty / loading states ─────────────────────────────────────────── */
     .empty-state {
       text-align: center;
       color: var(--text-muted);
-      padding: 32px 16px;
+      padding: 44px 22px;
       line-height: 1.6;
+      font-size: 13px;
+    }
+    .empty-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 18px 4px rgba(232, 161, 58, 0.45);
+      margin: 0 auto 16px;
+      animation: pulse 1.6s ease-in-out infinite;
     }
     .spinner {
       display: inline-block;
@@ -237,16 +331,6 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Glossary ───────────────────────────────────────────────────────── */
-    #glossary-pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: inherit;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--text);
-    }
-
     /* ── Quick-check (Lessons tab — active recall before reveal) ───────── */
     .qc-prompt {
       font-size: 13px;
@@ -259,7 +343,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 12px;
       font-weight: 600;
       padding: 5px 12px;
@@ -270,6 +354,197 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     .qc-reveal-btn:hover { background: var(--accent-dim); }
     .qc-body { display: none; }
     .qc-body.revealed { display: block; }
+
+    /* ── Lesson cards (Lessons tab — collapsible + dismissible) ─────────── */
+    .lesson-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lesson-toggle {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+      padding: 2px 0;
+      border-radius: 4px;
+    }
+    .lesson-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lesson-check {
+      display: none;
+      flex-shrink: 0;
+      color: var(--green);
+      font-weight: 700;
+    }
+    .lesson-card.understood .lesson-check { display: inline; }
+    .lesson-card.understood .lesson-title { color: var(--text-muted); }
+    .lesson-chevron {
+      flex-shrink: 0;
+      color: var(--text-muted);
+      font-size: 11px;
+      transition: transform var(--transition);
+    }
+    .lesson-card.collapsed .lesson-chevron { transform: rotate(-90deg); }
+    .lesson-toggle:hover .lesson-chevron { color: var(--text); }
+    .lesson-dismiss {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color var(--transition), background var(--transition);
+    }
+    .lesson-dismiss:hover { color: var(--text); background: var(--surface2); }
+
+    /* Smooth accordion via animatable grid rows (reduced-motion neutralizes it) */
+    .lesson-collapse {
+      display: grid;
+      grid-template-rows: 1fr;
+      transition: grid-template-rows var(--transition);
+    }
+    .lesson-card.collapsed .lesson-collapse { grid-template-rows: 0fr; }
+    .lesson-collapse > .lesson-collapse-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+    .lesson-card.collapsed .lesson-collapse > .lesson-collapse-inner { opacity: 0; }
+    .lesson-collapse > .lesson-collapse-inner { opacity: 1; transition: opacity var(--transition); }
+    .lesson-body-pad { padding-top: 8px; }
+
+    .lesson-gotit {
+      margin-top: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .lesson-gotit:hover { background: var(--border); }
+
+    /* ── Interactive glossary (Glossary tab) ───────────────────────────── */
+    #glossary-head {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    #glossary-search {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 9px 12px;
+      margin-bottom: 12px;
+    }
+    #glossary-search::placeholder { color: var(--text-muted); }
+
+    .gloss-cat { margin-bottom: 10px; }
+    .gloss-cat-head {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .gloss-cat-head:hover { background: var(--surface2); border-color: var(--border-strong); }
+    .gloss-cat-label { flex: 1; min-width: 0; }
+    .gloss-cat-count {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface2);
+      border-radius: 999px;
+      padding: 1px 8px;
+    }
+    .gloss-chevron, .gloss-row-chevron {
+      flex-shrink: 0;
+      color: var(--text-muted);
+      font-size: 10px;
+      transition: transform var(--transition);
+    }
+    .gloss-cat.collapsed .gloss-chevron { transform: rotate(-90deg); }
+
+    .gloss-cat-body {
+      display: grid;
+      grid-template-rows: 1fr;
+      transition: grid-template-rows var(--transition);
+    }
+    .gloss-cat.collapsed .gloss-cat-body { grid-template-rows: 0fr; }
+    .gloss-cat-body > .gloss-cat-inner { overflow: hidden; min-height: 0; }
+
+    .gloss-row { border-bottom: 1px solid var(--border); }
+    .gloss-cat-inner .gloss-row:last-child { border-bottom: none; }
+    .gloss-term {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      padding: 10px 8px 10px 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: color var(--transition);
+    }
+    .gloss-term:hover { color: var(--accent); }
+    .gloss-term-label { flex: 1; min-width: 0; }
+    .gloss-row.open .gloss-row-chevron { transform: rotate(180deg); }
+
+    .gloss-detail {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows var(--transition);
+    }
+    .gloss-row.open .gloss-detail { grid-template-rows: 1fr; }
+    .gloss-detail > .gloss-detail-inner { overflow: hidden; min-height: 0; }
+    .gloss-detail-pad { padding: 0 14px 12px 14px; }
+    .gloss-def { font-size: 13px; line-height: 1.55; color: var(--text); margin-bottom: 6px; }
+    .gloss-analogy { font-size: 12px; font-style: italic; color: var(--text-muted); margin-bottom: 6px; }
+    .gloss-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+    .gloss-learn {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .gloss-learn:hover { text-decoration: underline; }
+    .gloss-learn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
     /* ── Recall cards (Review tab) ─────────────────────────────────────── */
     .recall-card {
@@ -380,7 +655,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 13px;
       font-weight: 600;
       padding: 6px 14px;
@@ -401,7 +676,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 13px;
       font-weight: 600;
       padding: 7px 16px;
@@ -454,7 +729,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 13px;
       font-weight: 600;
       padding: 7px 16px;
@@ -536,7 +811,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 13px;
       font-weight: 600;
       padding: 7px 16px;
@@ -579,11 +854,10 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--surface2);
       color: var(--text-muted);
       border: 1px solid var(--border);
-      -webkit-app-region: no-drag;
     }
     #tier-pill.pro {
       background: var(--accent);
-      color: #fff;
+      color: var(--on-accent);
       border-color: var(--accent);
     }
 
@@ -675,7 +949,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 12px;
       font-weight: 600;
       padding: 4px 10px;
@@ -720,7 +994,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       background: var(--accent);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--on-accent);
       font-size: 13px;
       font-weight: 600;
       padding: 7px 16px;
@@ -789,6 +1063,20 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       font-weight: 600;
       font-size: 12px;
     }
+
+    /* ── Global focus & input polish ────────────────────────────────────── */
+    input:focus, textarea:focus { box-shadow: 0 0 0 3px var(--accent-soft); }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── Respect reduced-motion ─────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -797,26 +1085,27 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
 
   <!-- Header bar -->
   <div id="widget-header">
-    <span id="header-title">&#x1FA84; Lumi</span>
+    <span id="brand-dot" aria-hidden="true"></span>
+    <span id="header-title">Lumi <span class="tagline">&#xB7; learn as you build</span></span>
     <span id="tier-pill" title="Your current plan">Free</span>
-    <button class="chrome-btn" id="btn-wide"    title="Toggle wide mode">&#x2194;</button>
-    <button class="chrome-btn" id="btn-collapse" title="Collapse / expand">&#x2212;</button>
   </div>
 
   <!-- Body (hidden when collapsed) -->
   <div id="widget-body">
 
-    <!-- Tab bar -->
-    <div id="tab-bar">
-      <button class="tab-btn active" data-tab="lessons">Lessons</button>
-      <button class="tab-btn"        data-tab="glossary">Glossary</button>
-      <button class="tab-btn"        data-tab="review">Review</button>
-      <button class="tab-btn"        data-tab="explain">Explain</button>
-      <button class="tab-btn"        data-tab="coach">Coach</button>
-      <button class="tab-btn"        data-tab="prompt">Prompt</button>
-      <button class="tab-btn"        data-tab="paste">Paste</button>
-      <button class="tab-btn"        data-tab="paths">Paths</button>
-      <button class="tab-btn"        data-tab="digest">Digest</button>
+    <!-- Tab navigation: scrollable strip with gradient fade edges -->
+    <div id="tab-nav">
+      <div id="tab-bar" role="tablist" aria-label="Lumi sections">
+        <button class="tab-btn active" role="tab" data-tab="lessons">Lessons</button>
+        <button class="tab-btn"        role="tab" data-tab="glossary">Glossary</button>
+        <button class="tab-btn"        role="tab" data-tab="review">Review</button>
+        <button class="tab-btn"        role="tab" data-tab="explain">Explain</button>
+        <button class="tab-btn"        role="tab" data-tab="coach">Coach</button>
+        <button class="tab-btn"        role="tab" data-tab="prompt">Prompt</button>
+        <button class="tab-btn"        role="tab" data-tab="paste">Paste</button>
+        <button class="tab-btn"        role="tab" data-tab="paths">Paths</button>
+        <button class="tab-btn"        role="tab" data-tab="digest">Digest</button>
+      </div>
     </div>
 
     <!-- Tab content area -->
@@ -825,6 +1114,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       <!-- Lessons panel -->
       <div class="tab-panel active" id="panel-lessons">
         <div class="empty-state" id="lessons-empty">
+          <div class="empty-dot" aria-hidden="true"></div>
           Lumi is watching &#x2014; new concepts will appear here.
         </div>
         <div id="lessons-list"></div>
@@ -835,7 +1125,14 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
         <div class="empty-state" id="glossary-loading">
           <span class="spinner"></span> Loading glossary&hellip;
         </div>
-        <pre id="glossary-pre" style="display:none"></pre>
+        <div id="glossary-main" style="display:none">
+          <div id="glossary-head"></div>
+          <input id="glossary-search" type="search" autocomplete="off"
+                 placeholder="Search terms or definitions&hellip;" aria-label="Search glossary">
+          <div id="glossary-list"></div>
+          <div class="empty-state" id="glossary-none" style="display:none">No terms match your search.</div>
+        </div>
+        <div class="empty-state" id="glossary-empty" style="display:none"></div>
       </div>
 
       <!-- Review panel -->
@@ -942,9 +1239,8 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   }
 
   /* ── DOM refs ────────────────────────────────────────────────────────── */
-  var widget       = document.getElementById('widget');
-  var btnWide      = document.getElementById('btn-wide');
-  var btnCollapse  = document.getElementById('btn-collapse');
+  var tabBar       = document.getElementById('tab-bar');
+  var tabNav       = document.getElementById('tab-nav');
   var tabBtns      = document.querySelectorAll('.tab-btn');
   var tabPanels    = document.querySelectorAll('.tab-panel');
 
@@ -952,7 +1248,12 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   var lessonsEmpty = document.getElementById('lessons-empty');
 
   var glossaryLoading = document.getElementById('glossary-loading');
-  var glossaryPre     = document.getElementById('glossary-pre');
+  var glossaryMain    = document.getElementById('glossary-main');
+  var glossaryHead    = document.getElementById('glossary-head');
+  var glossarySearch  = document.getElementById('glossary-search');
+  var glossaryList    = document.getElementById('glossary-list');
+  var glossaryNone    = document.getElementById('glossary-none');
+  var glossaryEmpty   = document.getElementById('glossary-empty');
 
   var reviewLoading = document.getElementById('review-loading');
   var reviewCards   = document.getElementById('review-cards');
@@ -972,29 +1273,44 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   var glossaryLoaded  = false;
   var reviewLoaded    = false;
 
-  /* ── Chrome: collapse / wide ─────────────────────────────────────────── */
-  btnCollapse.addEventListener('click', function () {
-    var collapsed = widget.classList.toggle('collapsed');
-    btnCollapse.innerHTML = collapsed ? '&#x2B;' : '&#x2212;';
-    btnCollapse.title = collapsed ? 'Expand' : 'Collapse';
-  });
-
-  btnWide.addEventListener('click', function () {
-    widget.classList.toggle('wide');
-  });
-
-  /* ── Tabs ────────────────────────────────────────────────────────────── */
+  /* ── Tabs ────────────────────────────────────────────────────────────
+     9 sections live in a horizontally scrollable strip. The strip:
+       - translates vertical wheel into horizontal scroll,
+       - shows gradient fade edges when more tabs exist off-screen,
+       - auto-scrolls the active tab into view,
+       - supports left/right arrow navigation (roving tabindex),
+       - and remembers the last active tab in localStorage. */
   var pathsLoaded  = false;
   var digestLoaded = false;
+  var TAB_KEY    = 'lumi.activeTab';
+  var VALID_TABS = ['lessons', 'glossary', 'review', 'explain', 'coach',
+                    'prompt', 'paste', 'paths', 'digest'];
+
+  function updateTabFades() {
+    if (!tabBar || !tabNav) return;
+    var max = tabBar.scrollWidth - tabBar.clientWidth;
+    tabNav.classList.toggle('fade-left',  tabBar.scrollLeft > 2);
+    tabNav.classList.toggle('fade-right', tabBar.scrollLeft < max - 2);
+  }
 
   function activateTab(name) {
+    if (VALID_TABS.indexOf(name) < 0) name = 'lessons';
     activeTab = name;
+    var activeBtn = null;
     tabBtns.forEach(function (b) {
-      b.classList.toggle('active', b.dataset.tab === name);
+      var on = b.dataset.tab === name;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+      if (on) activeBtn = b;
     });
     tabPanels.forEach(function (p) {
       p.classList.toggle('active', p.id === 'panel-' + name);
     });
+    if (activeBtn && activeBtn.scrollIntoView) {
+      activeBtn.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }
+    try { localStorage.setItem(TAB_KEY, name); } catch (_) { /* private mode */ }
     if (name === 'glossary' && !glossaryLoaded) loadGlossary();
     if (name === 'review'   && !reviewLoaded)   loadReview();
     if (name === 'paths'    && !pathsLoaded)    loadPaths();
@@ -1002,10 +1318,41 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   }
 
   tabBtns.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      activateTab(btn.dataset.tab);
-    });
+    btn.addEventListener('click', function () { activateTab(btn.dataset.tab); });
   });
+
+  /* Keyboard: left/right arrows move between tabs */
+  tabBar.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    var idx = VALID_TABS.indexOf(activeTab);
+    if (idx < 0) idx = 0;
+    idx += (e.key === 'ArrowRight') ? 1 : -1;
+    if (idx < 0) idx = VALID_TABS.length - 1;
+    if (idx >= VALID_TABS.length) idx = 0;
+    activateTab(VALID_TABS[idx]);
+    var next = tabBar.querySelector('.tab-btn[data-tab="' + VALID_TABS[idx] + '"]');
+    if (next) next.focus();
+  });
+
+  /* Vertical wheel scrolls the strip horizontally */
+  tabBar.addEventListener('wheel', function (e) {
+    var max = tabBar.scrollWidth - tabBar.clientWidth;
+    if (max <= 0) return;
+    var delta = e.deltaY + e.deltaX;
+    if (delta === 0) return;
+    e.preventDefault();
+    tabBar.scrollLeft += delta;
+  }, { passive: false });
+
+  tabBar.addEventListener('scroll', updateTabFades);
+  window.addEventListener('resize', updateTabFades);
+
+  /* Restore the last active tab (default: lessons) */
+  var savedTab = null;
+  try { savedTab = localStorage.getItem(TAB_KEY); } catch (_) { /* private mode */ }
+  activateTab(savedTab || 'lessons');
+  updateTabFades();
 
   /* ── Quick-check prompt helper (mirrors core/src/quickcheck.ts) ────────
      Inlined here because OVERLAY_HTML is a self-contained string — it cannot
@@ -1014,32 +1361,103 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     return 'Before the answer — what do you think “' + label + '” means? Take a guess, then reveal.';
   }
 
+  /* ── Dismissed lessons (persisted so SSE replay cannot resurrect them) ──
+     Lessons are transient feed items. We remember which ones the user has
+     dismissed in localStorage, keyed by a stable lesson id, so a re-render or
+     an SSE replay on reconnect never brings a dismissed card back. */
+  var DISMISSED_KEY = 'lumi.dismissedLessons';
+  var dismissedLessons = (function () {
+    try {
+      var raw = localStorage.getItem(DISMISSED_KEY);
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (_) { return {}; }
+  })();
+  function saveDismissed() {
+    try { localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissedLessons)); } catch (_) { /* private mode */ }
+  }
+  function lessonIdOf(data) {
+    if (data && data.id) return String(data.id);
+    if (data && data.concept) return 'concept:' + String(data.concept);
+    if (data && data.lesson && data.lesson.title) return 'title:' + String(data.lesson.title);
+    return null;
+  }
+  function isLessonDismissed(id) { return !!(id && dismissedLessons[id]); }
+  function markLessonDismissed(id) {
+    if (!id) return;
+    dismissedLessons[id] = 1;
+    saveDismissed();
+  }
+
   /* ── Lesson card builder ─────────────────────────────────────────────── */
-  function buildLessonCard(lesson) {
+  function buildLessonCard(lesson, id) {
     // lesson is a FeedLesson or Lesson object.
     // ALL dynamic text is set via textContent — never innerHTML.
     var card = document.createElement('div');
-    card.className = 'card';
+    card.className = 'card lesson-card';
+    if (id) card.dataset.lessonId = id;
 
-    // Title (always visible)
-    var titleEl = document.createElement('div');
-    titleEl.className = 'card-title';
+    // Header row: collapse/expand toggle (title + chevron) + dismiss.
+    var head = document.createElement('div');
+    head.className = 'lesson-head';
+
+    var toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'lesson-toggle';
+    toggle.setAttribute('aria-expanded', 'true');
+
+    var check = document.createElement('span');
+    check.className = 'lesson-check';
+    check.textContent = '✓';
+    check.setAttribute('aria-hidden', 'true');
+    toggle.appendChild(check);
+
+    var titleEl = document.createElement('span');
+    titleEl.className = 'lesson-title';
     titleEl.textContent = lesson.title || '';
-    card.appendChild(titleEl);
+    toggle.appendChild(titleEl);
 
-    // Quick-check Socratic prompt (always visible before reveal)
+    var chevron = document.createElement('span');
+    chevron.className = 'lesson-chevron';
+    chevron.textContent = '▾';
+    chevron.setAttribute('aria-hidden', 'true');
+    toggle.appendChild(chevron);
+    head.appendChild(toggle);
+
+    var dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.className = 'lesson-dismiss';
+    dismiss.setAttribute('aria-label', 'Dismiss lesson');
+    dismiss.textContent = '✕';
+    head.appendChild(dismiss);
+    card.appendChild(head);
+
+    // Collapsible region (animated via grid rows). Inner wrapper is clipped.
+    var collapse = document.createElement('div');
+    collapse.className = 'lesson-collapse';
+    var collapseInner = document.createElement('div');
+    collapseInner.className = 'lesson-collapse-inner';
+    var bodyPad = document.createElement('div');
+    bodyPad.className = 'lesson-body-pad';
+    collapseInner.appendChild(bodyPad);
+    collapse.appendChild(collapseInner);
+    card.appendChild(collapse);
+
+    // Quick-check Socratic prompt (visible before reveal)
     var qcPrompt = document.createElement('p');
     qcPrompt.className = 'qc-prompt';
     qcPrompt.textContent = quickCheckPrompt(lesson.title || '');
-    card.appendChild(qcPrompt);
+    bodyPad.appendChild(qcPrompt);
 
     // Reveal button
     var revealBtn = document.createElement('button');
+    revealBtn.type = 'button';
     revealBtn.className = 'qc-reveal-btn';
     revealBtn.textContent = 'Reveal answer';
-    card.appendChild(revealBtn);
+    bodyPad.appendChild(revealBtn);
 
-    // Hidden body — shown when Reveal is clicked
+    // Hidden answer body — shown when Reveal is clicked
     var body = document.createElement('div');
     body.className = 'qc-body';
 
@@ -1088,13 +1506,109 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       body.appendChild(exSection);
     }
 
-    card.appendChild(body);
+    // "Got it ✓" — collapses the card and marks it understood (after reveal).
+    var gotItBtn = document.createElement('button');
+    gotItBtn.type = 'button';
+    gotItBtn.className = 'lesson-gotit';
+    gotItBtn.textContent = 'Got it ✓';
+    gotItBtn.style.display = 'none';
+    body.appendChild(gotItBtn);
 
-    // Reveal click handler — shows body, hides prompt + button
+    bodyPad.appendChild(body);
+
+    /* Collapse/expand: a real <button> gives Enter/Space + focus for free. */
+    function setExpanded(expanded) {
+      card.classList.toggle('collapsed', !expanded);
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+    toggle.addEventListener('click', function () {
+      setExpanded(card.classList.contains('collapsed'));
+    });
+
+    /* Dismiss: remove the card and remember it so it cannot come back. */
+    dismiss.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      markLessonDismissed(id);
+      if (card.parentNode) card.parentNode.removeChild(card);
+      if (lessonsList.children.length === 0) lessonsEmpty.style.display = '';
+    });
+
+    /* Reveal: show the answer body, then offer "Got it". */
     revealBtn.addEventListener('click', function () {
       body.classList.add('revealed');
       revealBtn.style.display = 'none';
       qcPrompt.style.display = 'none';
+      gotItBtn.style.display = '';
+    });
+
+    /* Got it: collapse + visually mark as understood. */
+    gotItBtn.addEventListener('click', function () {
+      card.classList.add('understood');
+      setExpanded(false);
+    });
+
+    return card;
+  }
+
+  /* ── Command-failure card (terminal events) ──────────────────────────── */
+  function buildFailureCard(data, id) {
+    var lesson = data.lesson || {};
+    var cmd = data.command || {};
+    var card = document.createElement('div');
+    card.className = 'card failure-card';
+    if (id) card.dataset.lessonId = id;
+
+    var head = document.createElement('div');
+    head.className = 'failure-head';
+    var badge = document.createElement('span');
+    badge.className = 'failure-badge';
+    badge.textContent = '⚠ Command failed';
+    head.appendChild(badge);
+    var dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.className = 'failure-dismiss';
+    dismiss.setAttribute('aria-label', 'Dismiss');
+    dismiss.textContent = '✕';
+    head.appendChild(dismiss);
+    card.appendChild(head);
+
+    if (cmd.line) {
+      var code = document.createElement('div');
+      code.className = 'failure-cmd';
+      code.textContent = cmd.line;
+      card.appendChild(code);
+    }
+
+    var meta = document.createElement('div');
+    var exit = document.createElement('span');
+    exit.className = 'failure-exit';
+    exit.textContent = 'exit code ' + (cmd.exitCode != null ? cmd.exitCode : '?');
+    meta.appendChild(exit);
+    if (cmd.cwd) {
+      var cwd = document.createElement('span');
+      cwd.className = 'failure-cwd';
+      cwd.textContent = cmd.cwd;
+      meta.appendChild(cwd);
+    }
+    card.appendChild(meta);
+
+    var body = document.createElement('div');
+    body.className = 'failure-body';
+    var p = document.createElement('p');
+    p.textContent = lesson.plainExplanation || '';
+    body.appendChild(p);
+    if (lesson.whyItMatters) {
+      var why = document.createElement('p');
+      why.className = 'failure-why';
+      why.textContent = lesson.whyItMatters;
+      body.appendChild(why);
+    }
+    card.appendChild(body);
+
+    dismiss.addEventListener('click', function () {
+      markLessonDismissed(id);
+      if (card.parentNode) card.parentNode.removeChild(card);
+      if (lessonsList.children.length === 0) lessonsEmpty.style.display = '';
     });
 
     return card;
@@ -1106,9 +1620,20 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   es.onmessage = function (e) {
     try {
       var data = JSON.parse(e.data);
-      if (data && data.lesson && data.lesson.title) {
+      // Terminal command failures render as a distinct warning card (no Socratic reveal).
+      if (data && data.type === 'terminal' && data.command) {
+        var fid = lessonIdOf(data);
+        if (isLessonDismissed(fid)) return;
         lessonsEmpty.style.display = 'none';
-        var card = buildLessonCard(data.lesson);
+        lessonsList.insertBefore(buildFailureCard(data, fid), lessonsList.firstChild);
+        fetchProgress();
+        return;
+      }
+      if (data && data.lesson && data.lesson.title) {
+        var id = lessonIdOf(data);
+        if (isLessonDismissed(id)) return; // user dismissed this one — stay gone
+        lessonsEmpty.style.display = 'none';
+        var card = buildLessonCard(data.lesson, id);
         lessonsList.insertBefore(card, lessonsList.firstChild);
         fetchProgress();
       }
@@ -1149,25 +1674,200 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
 
   fetchProgress();
 
-  /* ── Glossary tab ────────────────────────────────────────────────────── */
+  /* ── Glossary tab — interactive, searchable, collapsible ──────────────── */
+  var glossaryEntries = [];
+
   function loadGlossary() {
     glossaryLoaded = true;
     glossaryLoading.style.display = '';
-    glossaryPre.style.display = 'none';
+    glossaryMain.style.display = 'none';
+    glossaryEmpty.style.display = 'none';
 
     fetch('/api/glossary')
       .then(function (r) { return r.json(); })
       .then(function (data) {
         glossaryLoading.style.display = 'none';
-        // Render markdown as plain escaped text in a <pre>
-        glossaryPre.textContent = data.markdown || '(no glossary yet)';
-        glossaryPre.style.display = '';
+        glossaryEntries = Array.isArray(data.entries) ? data.entries : [];
+        renderGlossaryView();
       })
       .catch(function () {
         glossaryLoading.style.display = 'none';
-        glossaryPre.textContent = 'Could not load glossary.';
-        glossaryPre.style.display = '';
+        glossaryEmpty.textContent = 'Could not load glossary.';
+        glossaryEmpty.style.display = '';
       });
+  }
+
+  function renderGlossaryView() {
+    var n = glossaryEntries.length;
+    if (n === 0) {
+      glossaryMain.style.display = 'none';
+      glossaryEmpty.textContent =
+        "No terms yet — concepts appear here as Lumi teaches you while you build.";
+      glossaryEmpty.style.display = '';
+      return;
+    }
+    glossaryEmpty.style.display = 'none';
+    glossaryMain.style.display = '';
+    glossaryHead.textContent =
+      "You've learned " + n + (n === 1 ? ' concept.' : ' concepts.');
+    applyGlossaryFilter();
+  }
+
+  function clearChildren(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function applyGlossaryFilter() {
+    var q = (glossarySearch.value || '').trim().toLowerCase();
+    var matches = glossaryEntries.filter(function (e) {
+      if (!q) return true;
+      var hay = (
+        (e.label || '') + ' ' + (e.definition || '') + ' ' + (e.analogy || '')
+      ).toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+
+    clearChildren(glossaryList);
+
+    if (matches.length === 0) {
+      glossaryNone.style.display = '';
+      return;
+    }
+    glossaryNone.style.display = 'none';
+
+    // Group consecutive entries by category (the array is pre-sorted server-side).
+    var groups = [];
+    var byCat = {};
+    matches.forEach(function (e) {
+      var key = e.category || 'other';
+      if (!byCat[key]) {
+        byCat[key] = { category: key, label: e.categoryLabel || key, items: [] };
+        groups.push(byCat[key]);
+      }
+      byCat[key].items.push(e);
+    });
+
+    groups.forEach(function (g) {
+      glossaryList.appendChild(buildCategorySection(g));
+    });
+  }
+
+  function buildCategorySection(group) {
+    var section = document.createElement('div');
+    section.className = 'gloss-cat';
+
+    var head = document.createElement('button');
+    head.type = 'button';
+    head.className = 'gloss-cat-head';
+    head.setAttribute('aria-expanded', 'true');
+
+    var chev = document.createElement('span');
+    chev.className = 'gloss-chevron';
+    chev.textContent = '▾';
+    chev.setAttribute('aria-hidden', 'true');
+    head.appendChild(chev);
+
+    var label = document.createElement('span');
+    label.className = 'gloss-cat-label';
+    label.textContent = group.label;
+    head.appendChild(label);
+
+    var count = document.createElement('span');
+    count.className = 'gloss-cat-count';
+    count.textContent = String(group.items.length);
+    head.appendChild(count);
+    section.appendChild(head);
+
+    var body = document.createElement('div');
+    body.className = 'gloss-cat-body';
+    var inner = document.createElement('div');
+    inner.className = 'gloss-cat-inner';
+    body.appendChild(inner);
+    section.appendChild(body);
+
+    group.items.forEach(function (entry) {
+      inner.appendChild(buildGlossaryRow(entry));
+    });
+
+    head.addEventListener('click', function () {
+      var collapsed = section.classList.toggle('collapsed');
+      head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    });
+
+    return section;
+  }
+
+  function buildGlossaryRow(entry) {
+    var row = document.createElement('div');
+    row.className = 'gloss-row';
+
+    var head = document.createElement('button');
+    head.type = 'button';
+    head.className = 'gloss-term';
+    head.setAttribute('aria-expanded', 'false');
+
+    var term = document.createElement('span');
+    term.className = 'gloss-term-label';
+    term.textContent = entry.label || entry.id || '';
+    head.appendChild(term);
+
+    var chev = document.createElement('span');
+    chev.className = 'gloss-row-chevron';
+    chev.textContent = '▾';
+    chev.setAttribute('aria-hidden', 'true');
+    head.appendChild(chev);
+    row.appendChild(head);
+
+    // Collapsible detail (definition + analogy + meta + learn-more).
+    var detail = document.createElement('div');
+    detail.className = 'gloss-detail';
+    var inner = document.createElement('div');
+    inner.className = 'gloss-detail-inner';
+    var pad = document.createElement('div');
+    pad.className = 'gloss-detail-pad';
+    inner.appendChild(pad);
+    detail.appendChild(inner);
+    row.appendChild(detail);
+
+    if (entry.definition) {
+      var def = document.createElement('p');
+      def.className = 'gloss-def';
+      def.textContent = entry.definition;
+      pad.appendChild(def);
+    }
+    if (entry.analogy) {
+      var an = document.createElement('p');
+      an.className = 'gloss-analogy';
+      an.textContent = 'Like… ' + entry.analogy;
+      pad.appendChild(an);
+    }
+
+    var meta = document.createElement('p');
+    meta.className = 'gloss-meta';
+    var seen = (entry.seenCount == null) ? 0 : entry.seenCount;
+    meta.textContent = 'seen ' + seen + '× · learned ' + (entry.learnedAt || '—');
+    pad.appendChild(meta);
+
+    if (entry.learnMore) {
+      var link = document.createElement('a');
+      link.className = 'gloss-learn';
+      link.href = entry.learnMore;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Learn more ↗';
+      pad.appendChild(link);
+    }
+
+    head.addEventListener('click', function () {
+      var open = row.classList.toggle('open');
+      head.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    return row;
+  }
+
+  if (glossarySearch) {
+    glossarySearch.addEventListener('input', applyGlossaryFilter);
   }
 
   /* ── Review tab ──────────────────────────────────────────────────────── */
@@ -1352,7 +2052,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
         explainBtn.disabled = false;
         if (!data.lesson) {
           explainResult.innerHTML =
-            '<div class="empty-state">I don\'t have a lesson for that yet.</div>';
+            '<div class="empty-state">I don&#39;t have a lesson for that yet.</div>';
           return;
         }
         explainResult.innerHTML = '';
