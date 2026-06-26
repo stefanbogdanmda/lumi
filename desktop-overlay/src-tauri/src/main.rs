@@ -1,8 +1,7 @@
-// Prevents an extra console window on Windows in release.
+// Prevents an extra console window on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// All app logic lives in the library crate (canonical Tauri v2 layout, mobile-ready).
 fn main() {
-    tauri::Builder::default()
-        .run(tauri::generate_context!())
-        .expect("error while running Lumi Overlay");
+    lumi_overlay_lib::run();
 }

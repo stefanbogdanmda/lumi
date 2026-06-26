@@ -1,23 +1,26 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lumi Overlay",
+  "productName": "Lumi",
   "version": "0.1.0",
-  "identifier": "com.lumi.overlay",
+  "identifier": "app.lumi.overlay",
   "build": {
     "frontendDist": "../src"
   },
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Lumi",
-        "width": 420,
-        "height": 620,
-        "minWidth": 320,
-        "minHeight": 360,
+        "width": 400,
+        "height": 640,
+        "minWidth": 360,
+        "minHeight": 500,
         "resizable": true,
-        "decorations": false,
-        "transparent": true,
-        "alwaysOnTop": true
+        "decorations": true,
+        "transparent": false,
+        "backgroundColor": "#1a1411",
+        "alwaysOnTop": true,
+        "visible": false
       }
     ],
     "security": {
@@ -27,6 +30,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.png"]
+    "icon": ["icons/icon.png", "icons/icon.ico"]
   }
 }

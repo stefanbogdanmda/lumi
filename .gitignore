@@ -26,3 +26,6 @@ marketing/video/public/audio/
 billing/
 docs/superpowers/
 docs/LAUNCH.md
+
+# Tauri auto-generated schemas
+desktop-overlay/src-tauri/gen/

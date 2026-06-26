@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "node scripts/png-to-ico.mjs src-tauri/icons/icon.png src-tauri/icons/icon.ico"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
