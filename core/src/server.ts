@@ -1,5 +1,8 @@
 import * as http from "node:http";
 import { join } from "node:path";
+import { homedir } from "node:os";
+import { watchAiSessions } from "./session/ai-monitor";
+import { isAiCaptureEnabled } from "./session/consent";
 import { JsonFileProfile } from "./profile";
 import { JsonFileCache } from "./cache";
 import { lumiHome } from "./paths";
@@ -38,6 +41,8 @@ export interface OverlayServerDeps {
   source?: string;
   /** Injectable entitlement for tests — skips disk read. */
   entitlement?: LicenseResult;
+  /** Override the AI-session roots watched (default ~/.claude/projects). Tests inject a temp dir. */
+  claudeRoots?: string[];
 }
 
 
@@ -104,6 +109,19 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     // Surface ingestion errors instead of silently swallowing them.
     { pollMs, onError: (e) => console.error("[lumi:terminal-watch]", e) },
   );
+
+  // AI-session monitor: tail Claude Code transcripts and teach from the assistant's
+  // prose + commands + OUTPUT. Default OFF — only runs while consent is granted
+  // (checked live each drain, so toggling consent.json pauses capture at the source).
+  const claudeRoots = deps.claudeRoots ?? [join(homedir(), ".claude", "projects")];
+  const stopAiWatch = watchAiSessions({
+    roots: claudeRoots,
+    lumi,
+    isEnabled: () => isAiCaptureEnabled(home),
+    pollMs,
+    onEvents: (events) => { for (const e of events) appendEvent(feedFile, e); },
+    onError: (e) => console.error("[lumi:ai-watch]", e),
+  });
 
   const server = http.createServer(async (req, res) => {
     try {
@@ -459,9 +477,12 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     }
   });
 
-  // Stop tailing terminal.jsonl when the server is closed so tests/processes
-  // don't leak the watcher + poll interval.
-  server.on("close", () => stopTerminalWatch());
+  // Stop both watchers when the server is closed so tests/processes don't
+  // leak fs.watch handles or poll intervals.
+  server.on("close", () => {
+    try { stopTerminalWatch(); } catch { /* already stopped */ }
+    try { stopAiWatch(); } catch { /* already stopped */ }
+  });
 
   return server;
 }
