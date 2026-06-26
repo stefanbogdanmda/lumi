@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, statSync, watch, type FSWatcher } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { readLinesSince } from "../tail";
 import type { FeedEvent } from "../feed";
 import type { Lumi } from "../lumi";
@@ -45,7 +45,7 @@ export function detectActiveSessions(
     out.push({
       tool: "claude-code",
       sessionId: basename(file).replace(/\.jsonl$/, ""),
-      project: basename(file.slice(0, file.length - basename(file).length - 1)),
+      project: basename(dirname(file)),
       file, mtimeMs,
     });
   }
@@ -73,6 +73,7 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
   const offsets = new Map<string, number>();
   const pendings = new Map<string, Map<string, PendingToolUse>>();
   let draining = false;
+  let wasDisabled = false;
 
   // Seed offsets at EOF for files that already exist, so we only teach NEW turns.
   for (const file of scanSessionFiles(opts.roots)) {
@@ -81,9 +82,19 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
 
   const drain = async (): Promise<void> => {
     if (draining) return;
-    if (!opts.isEnabled()) return; // honor live consent; no reads while paused
+    if (!opts.isEnabled()) { wasDisabled = true; return; } // paused: no reads, remember it
     draining = true;
     try {
+      if (wasDisabled) {
+        // Resuming after a pause: skip everything written while paused so the
+        // user's paused interval is never captured. Advance offsets to EOF and
+        // drop stale pending tool_use joins.
+        for (const file of scanSessionFiles(opts.roots)) {
+          try { offsets.set(file, statSync(file).size); } catch { /* ignore */ }
+        }
+        pendings.clear();
+        wasDisabled = false;
+      }
       for (const file of scanSessionFiles(opts.roots)) {
         const start = offsets.has(file) ? offsets.get(file)! : 0; // new file → from start
         const { lines, offset } = readLinesSince(file, start);
