@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { lumiHome, profilePath, cachePath } from "../src/paths";
+import { lumiHome, profilePath, cachePath, feedPath, terminalFile } from "../src/paths";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -11,6 +11,8 @@ describe("paths", () => {
       expect(lumiHome()).toBe("/tmp/lumi-test-home");
       expect(profilePath()).toBe(join("/tmp/lumi-test-home", "profile.json"));
       expect(cachePath()).toBe(join("/tmp/lumi-test-home", "cache.json"));
+      expect(feedPath()).toBe(join("/tmp/lumi-test-home", "feed.jsonl"));
+      expect(terminalFile()).toBe(join("/tmp/lumi-test-home", "terminal.jsonl"));
     } finally {
       if (prev === undefined) delete process.env.LUMI_HOME; else process.env.LUMI_HOME = prev;
     }

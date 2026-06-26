@@ -23,6 +23,9 @@ import { learningStats } from "./stats";
 import { runAdvise } from "./advise";
 import { runPrompt } from "./prompt";
 import { runSetup, detectInstalledTools } from "./setup";
+import { runSetupTerminal } from "./terminal-setup";
+import { parseTerminalRecord, processTerminalRecord, watchTerminalFile, TerminalRecord } from "./terminal";
+import { terminalFile } from "./paths";
 import { homedir } from "node:os";
 import { listPaths, allPathsProgress, nextAcrossPaths } from "./curriculum";
 import { progressCardFromProfile } from "./card";
@@ -85,6 +88,8 @@ Usage:
   lumi prompt "<idea>"      Turn a rough idea into a clear, ready-to-paste prompt
   lumi review [--got|--forgot "<term>"]  Refresh due concepts; record how recall went
   lumi feed [--source S]    Detect concepts from captured tool output and write lesson events to the feed
+  lumi term [--json '<…>']  Process ONE terminal command record (from stdin or --json) into the feed
+  lumi watch                Watch ~/.lumi/terminal.jsonl and teach from commands you run by hand
   lumi path                 Show learning path progress and your next recommended concept
   lumi card [--out <file>]  Generate a shareable SVG progress card
   lumi check                Run a security lens over piped input and flag risky patterns
@@ -96,6 +101,7 @@ Usage:
   lumi unstuck              Spot an AI fix-loop in piped output and coach a way forward
   lumi serve [--port N]     Start the web overlay server (default port 4321)
   lumi setup [tool|--all]   Connect Lumi to your AI tool(s) automatically (Codex, Cursor, …)
+  lumi setup terminal       Wire your shell so plain terminal commands teach you too
   lumi export [--out <f>]   Save your learning to a file (move it between machines)
   lumi import <file>        Merge a Lumi export into this machine (never overwrites)
   lumi doctor               Check that Lumi is set up correctly
@@ -374,9 +380,37 @@ export async function runCli(argv: string[], deps: CliDeps = {}): Promise<number
       return 0;
     }
     case "setup": {
+      // `lumi setup terminal` wires shell profiles; everything else wires AI tools.
+      if ((argv[1] ?? "").toLowerCase() === "terminal") {
+        return runSetupTerminal({ out });
+      }
       const force = argv.includes("--force");
       const tools = argv.slice(1).filter((t) => t !== "--force");
       return runSetup(tools, { out, force });
+    }
+    case "term": {
+      // Process exactly ONE terminal record (synchronous path for scripts).
+      const jsonIdx = argv.indexOf("--json");
+      const raw = jsonIdx >= 0 ? (argv[jsonIdx + 1] ?? "") : (deps.input ?? "");
+      const record = parseTerminalRecord(raw.trim());
+      if (!record) {
+        out("No valid terminal record on stdin or --json. Expected a single JSON line with v, ts, command.");
+        return 1;
+      }
+      const cache = new JsonFileCache(join(home, "cache.json"));
+      const generator = deps.generator ?? new FallbackGenerator(new ClaudeCliGenerator(), new MockGenerator());
+      const lumi = new Lumi({ profile, cache, generator });
+      const events = await processTerminalRecord(record, lumi);
+      const feedFile = join(home, "feed.jsonl");
+      for (const e of events) appendEvent(feedFile, e);
+      const failed = events.some((e) => e.type === "terminal");
+      out(`${events.length} event(s) written to feed${failed ? " (⚠ command failed)" : ""}.`);
+      return 0;
+    }
+    case "watch": {
+      startWatch({ home, generator: deps.generator }, out);
+      out("Watching ~/.lumi/terminal.jsonl — run commands in any terminal. Press Ctrl-C to stop.");
+      return 0;
     }
     case "doctor": {
       const claudeAvailable = deps.claudeAvailable ?? await detectClaude();
@@ -792,6 +826,37 @@ function detectClaude(bin = "claude"): Promise<boolean> {
       c.on("close", (code) => { clearTimeout(t); resolve(code === 0); });
     } catch { resolve(false); }
   });
+}
+
+/**
+ * Tail ~/.lumi/terminal.jsonl, teach from each new command, and append lessons
+ * to feed.jsonl. Returns a stop function (clears the watcher + interval).
+ */
+export function startWatch(
+  deps: CliDeps & { pollMs?: number } = {},
+  out: (s: string) => void = (s) => console.log(s),
+): () => void {
+  const home = deps.home ?? lumiHome();
+  const file = home ? join(home, "terminal.jsonl") : terminalFile();
+  const feedFile = join(home, "feed.jsonl");
+  const cache = new JsonFileCache(join(home, "cache.json"));
+  const generator = deps.generator ?? new FallbackGenerator(new ClaudeCliGenerator(), new MockGenerator());
+  const profile = new JsonFileProfile(join(home, "profile.json"));
+  const lumi = new Lumi({ profile, cache, generator });
+
+  return watchTerminalFile(
+    file,
+    async (record: TerminalRecord) => {
+      const events = await processTerminalRecord(record, lumi);
+      for (const e of events) appendEvent(feedFile, e);
+      const failed = events.some((e) => e.type === "terminal");
+      // Log the REDACTED command only (the terminal event carries redacted text).
+      // NEVER fall back to record.command — that's the raw, unredacted line.
+      const shown = events.find((e) => e.type === "terminal")?.command?.line ?? "[command]";
+      out(`• ${events.length} lesson event(s) from a command${failed ? ` (⚠ failed: ${shown})` : ""}`);
+    },
+    { pollMs: deps.pollMs, onError: (e) => out(`watch error: ${(e as Error).message ?? e}`) },
+  );
 }
 
 /** Start the overlay server bound to 127.0.0.1 and return the listening server instance. */

@@ -4,10 +4,11 @@ import { JsonFileProfile } from "./profile";
 import { JsonFileCache } from "./cache";
 import { lumiHome } from "./paths";
 import { levelFromCount } from "./level";
-import { renderGlossary } from "./glossary";
+import { renderGlossary, buildGlossaryEntries } from "./glossary";
 import { dueForReview } from "./review";
 import { milestoneFor, nextMilestone } from "./milestones";
 import { readEventsSince, appendEvent, lessonEvent } from "./feed";
+import { watchTerminalFile, processTerminalRecord } from "./terminal";
 import { detectRisks, riskAdvice, severityLabel } from "./risk";
 import { Lumi } from "./lumi";
 import { FallbackGenerator, ClaudeCliGenerator, MockGenerator } from "./generator";
@@ -90,6 +91,19 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   const profile = new JsonFileProfile(join(home, "profile.json"));
   const cache = new JsonFileCache(join(home, "cache.json"));
   const lumi = new Lumi({ profile, cache, generator });
+
+  // Self-sufficient terminal ingestion: running the overlay automatically
+  // teaches from plain commands the user runs by hand. Lessons land in
+  // feed.jsonl, which the SSE /events poller already pushes to the overlay.
+  const stopTerminalWatch = watchTerminalFile(
+    join(home, "terminal.jsonl"),
+    async (record) => {
+      const events = await processTerminalRecord(record, lumi);
+      for (const e of events) appendEvent(feedFile, e);
+    },
+    // Surface ingestion errors instead of silently swallowing them.
+    { pollMs, onError: (e) => console.error("[lumi:terminal-watch]", e) },
+  );
 
   const server = http.createServer(async (req, res) => {
     try {
@@ -186,8 +200,12 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
 
       // GET /api/glossary
       if (method === "GET" && url === "/api/glossary") {
-        const markdown = renderGlossary(profile.listLearned());
-        sendJson(res, 200, { markdown });
+        const learned = profile.listLearned();
+        const markdown = renderGlossary(learned);
+        // Structured entries for the interactive overlay glossary. Definitions
+        // come from each concept's CACHED lesson (empty when none is cached).
+        const entries = buildGlossaryEntries(learned, (id) => lumi.definitionFor(id));
+        sendJson(res, 200, { markdown, entries });
         return;
       }
 
@@ -440,6 +458,10 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
       try { sendJson(res, 500, { error: "server error" }); } catch {}
     }
   });
+
+  // Stop tailing terminal.jsonl when the server is closed so tests/processes
+  // don't leak the watcher + poll interval.
+  server.on("close", () => stopTerminalWatch());
 
   return server;
 }

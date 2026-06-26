@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, appendFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as http from "node:http";
@@ -126,6 +126,22 @@ describe("createOverlayServer", () => {
     const json = JSON.parse(res.body);
     expect(json).toHaveProperty("markdown");
     expect(json.markdown).toContain("# My Lumi Glossary");
+  });
+
+  it("GET /api/glossary also returns a structured entries array", async () => {
+    const res = await get(port, "/api/glossary");
+    expect(res.status).toBe(200);
+    const json = JSON.parse(res.body);
+    expect(Array.isArray(json.entries)).toBe(true);
+    // The seeded learned concept (git-commit) must appear as a structured entry.
+    const entry = json.entries.find((e: { id: string }) => e.id === "git-commit");
+    expect(entry).toBeTruthy();
+    expect(entry.label).toBe("Git commit");
+    expect(entry.category).toBe("git");
+    expect(entry.categoryLabel).toBe("Git & version control");
+    expect(entry.seenCount).toBeGreaterThanOrEqual(1);
+    expect(entry.learnedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(typeof entry.learnMore).toBe("string");
   });
 
   it("GET /api/review returns 200 with items array", async () => {
@@ -1019,5 +1035,32 @@ describe("createOverlayServer", () => {
       req.end();
     });
     expect(res.status).toBe(413);
+  });
+});
+
+describe("createOverlayServer — terminal.jsonl tailing", () => {
+  let home: string;
+  let server: http.Server;
+
+  beforeEach(async () => {
+    home = mkdtempSync(join(tmpdir(), "lumi-server-term-"));
+    server = createOverlayServer({ home, generator: new MockGenerator(), pollMs: 30 });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it("teaches from a command appended to terminal.jsonl and writes it to feed.jsonl", async () => {
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const termFile = join(home, "terminal.jsonl");
+    await delay(60); // let the watcher attach
+    appendFileSync(termFile, JSON.stringify({ v: 1, ts: "x", command: "npm install react" }) + "\n");
+    const feed = join(home, "feed.jsonl");
+    for (let i = 0; i < 50 && !existsSync(feed); i++) await delay(30);
+    const lines = readFileSync(feed, "utf8").split("\n").filter(Boolean);
+    expect(lines.map((l) => JSON.parse(l).concept)).toContain("npm-install");
   });
 });

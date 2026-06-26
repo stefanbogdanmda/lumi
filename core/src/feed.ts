@@ -18,10 +18,12 @@ export interface FeedEvent {
   ts: string;
   source: string;
   session?: string;
-  type: "lesson" | "review_due" | "progress" | "glossary_update" | "tool_action";
+  type: "lesson" | "review_due" | "progress" | "glossary_update" | "tool_action" | "terminal";
   concept?: string;
   level?: LearnerLevel;
   lesson?: FeedLesson;
+  /** Failure context for a plain terminal command (carries the "⚠ command failed" nudge to the overlay). */
+  command?: { line: string; exitCode?: number | null; failed: boolean; cwd?: string };
 }
 
 export interface LessonEventInput {
@@ -49,10 +51,12 @@ export function lessonEvent(input: LessonEventInput): FeedEvent {
   };
 }
 
-/** Append one event as a JSON line (creates the file/dir if needed). */
+/** Append one event as a JSON line (creates the file/dir if needed).
+ *  Least-privilege perms (0700 dir / 0600 file) so the feed isn't world-readable
+ *  on POSIX. mode is ignored, harmlessly, on Windows. */
 export function appendEvent(file: string, event: FeedEvent): void {
-  mkdirSync(dirname(file), { recursive: true });
-  appendFileSync(file, JSON.stringify(event) + "\n", "utf8");
+  mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+  appendFileSync(file, JSON.stringify(event) + "\n", { encoding: "utf8", mode: 0o600 });
 }
 
 /**
