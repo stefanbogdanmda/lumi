@@ -66,6 +66,22 @@ describe("extractClaudeEvents", () => {
     expect(events.find((e) => e.files?.includes("C:/p/a.ts"))).toBeTruthy();
   });
 
+  it("surfaces exitCode from toolUseResult on the joined command event", () => {
+    const pending = new Map<string, PendingToolUse>();
+    const events = extractClaudeEvents([
+      JSON.stringify({ type: "assistant", sessionId: "s1", cwd: "C:/p", timestamp: "t",
+        message: { role: "assistant", content: [
+          { type: "tool_use", id: "tu_e", name: "Bash", input: { command: "false" } },
+        ] } }),
+      JSON.stringify({ type: "user", sessionId: "s1", cwd: "C:/p", timestamp: "t2",
+        message: { role: "user", content: [{ type: "tool_result", tool_use_id: "tu_e", content: "" }] },
+        toolUseResult: { stdout: "", stderr: "boom", exitCode: 1 } }),
+    ], pending);
+    const cmd = events.find((e) => e.command === "false");
+    expect(cmd?.exitCode).toBe(1);
+    expect(cmd?.stderr).toBe("boom");
+  });
+
   it("ignores unknown/bridge line types without throwing", () => {
     const events = extractClaudeEvents([
       JSON.stringify({ type: "bridge-session", foo: 1 }),

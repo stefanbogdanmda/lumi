@@ -78,6 +78,8 @@ export function extractClaudeEvents(
       const resultBlocks = Array.isArray(content)
         ? content.filter((b: any) => b?.type === "tool_result" && typeof b.tool_use_id === "string")
         : [];
+      // Assumes one toolUseResult per user line (Claude writes one tool_result per line);
+      // if multiple tool_result blocks ever share a line they'd map to this single result.
       const tur = entry?.toolUseResult;
       for (const rb of resultBlocks) {
         const p = pending.get(rb.tool_use_id);
