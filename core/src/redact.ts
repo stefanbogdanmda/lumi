@@ -18,6 +18,12 @@ interface Rule {
 
 // NOTE: every `re` MUST be global (`g`) so String.replace swaps all matches.
 const RULES: Rule[] = [
+  // Multi-line private-key / certificate blocks: collapse the whole armored body.
+  {
+    re: /-----BEGIN [A-Z0-9 ]*?(?:PRIVATE KEY|CERTIFICATE)-----[\s\S]*?-----END [A-Z0-9 ]*?(?:PRIVATE KEY|CERTIFICATE)-----/g,
+    replace: PLACEHOLDER,
+  },
+
   // JWTs: header.payload.signature, each a base64url segment. Run first so the
   // generic blob rule doesn't eat half of it.
   { re: /eyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}/g, replace: PLACEHOLDER },
@@ -64,9 +70,26 @@ const RULES: Rule[] = [
     replace: `$1$2${PLACEHOLDER}`,
   },
 
-  // Long high-entropy blobs (hex / base64url tokens). Excludes `/` so ordinary
-  // file paths (which are slash-delimited) are not swallowed. Run LAST.
-  { re: /\b[A-Za-z0-9+_-]{40,}={0,2}\b/g, replace: PLACEHOLDER },
+  // Arbitrary NAME=token in output/env dumps: any UPPER_SNAKE name assigned a
+  // long-ish opaque value. Keep the name + '='; drop the value.
+  {
+    re: /\b([A-Z][A-Z0-9_]{2,})=("[^"]*"|'[^']*'|[A-Za-z0-9+/_=-]{12,})/g,
+    replace: `$1=${PLACEHOLDER}`,
+  },
+
+  // PII — email addresses.
+  { re: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, replace: PLACEHOLDER },
+
+  // PII — 13–19 digit card-like numbers (optionally space/dash grouped).
+  { re: /\b(?:\d[ -]?){12,18}\d\b/g, replace: PLACEHOLDER },
+
+  // Long high-entropy blobs (hex / base64, incl. '/'-bearing AWS secret keys).
+  // Skip path-like strings (drive-letter or dotted segments) so file paths and
+  // dotted names survive; gate on length as a cheap entropy proxy. Run LAST.
+  {
+    re: /(?<![\w./\\:-])[A-Za-z0-9+/_=-]{40,}={0,2}(?![\w./\\-])/g,
+    replace: PLACEHOLDER,
+  },
 ];
 
 /**
