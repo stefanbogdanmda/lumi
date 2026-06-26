@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, utimesSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, utimesSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { scanSessionFiles, detectActiveSessions, watchAiSessions } from "../src/session/ai-monitor";
@@ -145,6 +145,16 @@ describe("watchAiSessions (integration)", () => {
       appendFileSync(file, turn("npm install", "added 1 package", "tu2")); // DIFFERENT turn after resume
       await new Promise((r) => setTimeout(r, 300));
       expect(got.some((e) => e.type === "lesson")).toBe(true); // post-resume IS captured
+    } finally { stop(); }
+  });
+
+  it("does not create a non-existent root and does not throw", () => {
+    const base = mkdtempSync(join(tmpdir(), "lumi-noroot-"));
+    const missing = join(base, "does-not-exist");
+    const lumi = new Lumi({ profile: new InMemoryProfile(), cache: new InMemoryCache(), generator: new MockGenerator() });
+    const stop = watchAiSessions({ roots: [missing], lumi, isEnabled: () => true, pollMs: 50, onEvents: () => {} });
+    try {
+      expect(existsSync(missing)).toBe(false); // Lumi did NOT create it
     } finally { stop(); }
   });
 });

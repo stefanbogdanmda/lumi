@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, statSync, watch, type FSWatcher } from "node:fs";
+import { existsSync, readdirSync, statSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { readLinesSince } from "../tail";
 import type { FeedEvent } from "../feed";
@@ -128,7 +128,7 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
 
   const watchers: FSWatcher[] = [];
   for (const root of opts.roots) {
-    try { mkdirSync(root, { recursive: true, mode: 0o700 }); } catch { /* ignore */ }
+    if (!existsSync(root)) continue; // don't create another tool's dir; poll picks it up if it appears
     try {
       const w = watch(root, { recursive: true }, () => { void drain(); });
       w.on("error", (e) => opts.onError?.(e));
