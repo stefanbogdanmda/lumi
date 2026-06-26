@@ -73,27 +73,37 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
   const offsets = new Map<string, number>();
   const pendings = new Map<string, Map<string, PendingToolUse>>();
   let draining = false;
-  let wasDisabled = false;
 
-  // Seed offsets at EOF for files that already exist, so we only teach NEW turns.
-  for (const file of scanSessionFiles(opts.roots)) {
-    try { offsets.set(file, statSync(file).size); } catch { /* ignore */ }
+  // Seed-to-EOF at the first moment we are enabled (skip pre-existing history) and
+  // again after any pause (skip the paused interval). Crucially, while consent is
+  // OFF the monitor does ZERO filesystem enumeration: no scan, no per-file stat —
+  // so a server constructed with capture disabled never walks ~/.claude/projects.
+  //   - Enabled at construction: seed now so history is skipped while a file
+  //     created AFTER start is still read from 0 (it won't be in `offsets` yet).
+  //   - Disabled at construction: do nothing; the first enabled drain reseeds,
+  //     which also skips whatever was written while disabled.
+  let needsReseed = true;
+  if (opts.isEnabled()) {
+    for (const file of scanSessionFiles(opts.roots)) {
+      try { offsets.set(file, statSync(file).size); } catch { /* ignore */ }
+    }
+    needsReseed = false;
   }
 
   const drain = async (): Promise<void> => {
     if (draining) return;
-    if (!opts.isEnabled()) { wasDisabled = true; return; } // paused: no reads, remember it
+    if (!opts.isEnabled()) { needsReseed = true; return; } // disabled/paused: no FS work at all
     draining = true;
     try {
-      if (wasDisabled) {
-        // Resuming after a pause: skip everything written while paused so the
-        // user's paused interval is never captured. Advance offsets to EOF and
-        // drop stale pending tool_use joins.
+      if (needsReseed) {
+        // First enabled drain after a disabled start, or resuming after a pause:
+        // advance every offset to EOF so the disabled/paused interval is never
+        // captured, and drop stale pending tool_use joins.
         for (const file of scanSessionFiles(opts.roots)) {
           try { offsets.set(file, statSync(file).size); } catch { /* ignore */ }
         }
         pendings.clear();
-        wasDisabled = false;
+        needsReseed = false;
       }
       for (const file of scanSessionFiles(opts.roots)) {
         const start = offsets.has(file) ? offsets.get(file)! : 0; // new file → from start
