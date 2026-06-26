@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync, watch, type FSWatcher } from "node:fs";
+import { existsSync, readdirSync, statSync, watch, type Dirent, type FSWatcher } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { readLinesSince } from "../tail";
 import type { FeedEvent } from "../feed";
@@ -10,7 +10,7 @@ import { processSessionEvents } from "./process";
 export function scanSessionFiles(roots: string[]): string[] {
   const out: string[] = [];
   const walk = (dir: string) => {
-    let entries: ReturnType<typeof readdirSync>;
+    let entries: Dirent[];
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const ent of entries) {
       const full = join(dir, ent.name);

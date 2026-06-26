@@ -69,6 +69,13 @@ All driven by one shared **lesson-event feed**, so every surface stays in sync:
 ## Which tools it works with
 Lumi's brain is **tool-agnostic**.
 - **Claude Code** — live-tested across terminal, desktop, and mobile (inline plugin).
+- **Live AI-session capture (Claude Code):** Lumi can passively read Claude Code's
+  own on-disk session files — the assistant's replies, the commands it runs, **and
+  their full output** — and teach from them in real time. This is **off by default**
+  and turns on only after you opt in. Secrets are dropped or redacted before anything
+  is saved, and capture is confined to the AI tool's own session files: Lumi does not
+  read other terminals' raw output or scrape your screen. (Raw output from terminals
+  you run yourself is a separate, opt-in "Lumi Terminal" feature, coming later.)
 - **Codex, Cursor, Gemini CLI, Copilot, OpenCode** — adapter hooks ship today, verified offline;
   live-verify on a machine with that tool installed. `lumi setup` wires them up for you.
 - **Any tool, including browser builders** (Lovable, Bolt, v0, Replit) — use **paste mode**: paste
