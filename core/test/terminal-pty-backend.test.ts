@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { FakePtyBackend, loadPtyBackend, __resetPtyBackendCache } from "../src/terminal/pty-backend";
 
 describe("FakePtyBackend", () => {
@@ -21,9 +21,18 @@ describe("FakePtyBackend", () => {
     expect(s.killed).toBe(true);
     expect(backend.sessions).toHaveLength(1);
   });
+
+  it("accumulates sessions across multiple spawns", () => {
+    const b = new FakePtyBackend();
+    b.spawn({ shell: "sh", cwd: "/", cols: 80, rows: 24 });
+    b.spawn({ shell: "sh", cwd: "/", cols: 80, rows: 24 });
+    expect(b.sessions).toHaveLength(2);
+  });
 });
 
 describe("loadPtyBackend", () => {
+  afterEach(() => __resetPtyBackendCache());
+
   it("returns null (never throws) when node-pty is not installed", () => {
     __resetPtyBackendCache();
     const a = loadPtyBackend();

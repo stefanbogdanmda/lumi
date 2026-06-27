@@ -10,6 +10,7 @@ export interface PtySpawnOptions {
 
 /** A live PTY session — a thin, backend-agnostic handle. */
 export interface PtySession {
+  // onData/onExit register a listener for the session's lifetime; cleanup is via kill().
   onData(cb: (data: string) => void): void;
   onExit(cb: (e: { exitCode: number }) => void): void;
   write(data: string): void;
@@ -52,11 +53,16 @@ export function loadPtyBackend(): PtyBackend | null {
     };
     cachedBackend = {
       spawn(opts) {
+        // Build env without casting away undefined: process.env values are
+        // `string | undefined`, so copy only defined keys, then layer opts.env.
+        const env: Record<string, string> = {};
+        for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v;
+        if (opts.env) for (const [k, v] of Object.entries(opts.env)) env[k] = v;
         const p = pty.spawn(opts.shell, opts.args ?? [], {
           cwd: opts.cwd,
           cols: opts.cols,
           rows: opts.rows,
-          env: { ...process.env, ...(opts.env ?? {}) } as Record<string, string>,
+          env,
         });
         return {
           onData: (cb) => { p.onData(cb); },
@@ -92,6 +98,7 @@ export class FakePtySession implements PtySession {
   onExit(cb: (e: { exitCode: number }) => void): void { this.exitCbs.push(cb); }
   write(d: string): void { this.written.push(d); }
   resize(cols: number, rows: number): void { this.lastResize = { cols, rows }; }
+  /** NOTE: unlike real node-pty, kill() does NOT fire onExit. Call exit() explicitly in tests that need exit-after-kill. */
   kill(): void { this.killed = true; }
   /** Test helper: simulate shell output. */
   emit(data: string): void { for (const cb of this.dataCbs) cb(data); }
