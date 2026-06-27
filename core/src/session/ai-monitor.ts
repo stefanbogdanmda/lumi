@@ -104,6 +104,9 @@ export interface AiMonitorOptions {
  */
 export function watchAiSessions(opts: AiMonitorOptions): () => void {
   const pollMs = opts.pollMs ?? 1000;
+  // These grow monotonically: one entry per unique session-file path ever seen
+  // (bounded for a local tool). offsets/states/fileTool are kept in sync — if file
+  // eviction is ever added, drop a path from all three together.
   const offsets = new Map<string, number>();
   const states = new Map<string, unknown>();        // file → adapter state
   const fileTool = new Map<string, SessionAdapter>(); // file → owning adapter
@@ -131,8 +134,15 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
     if (!opts.isEnabled()) { needsReseed = true; return; }
     draining = true;
     try {
-      if (needsReseed) { seed(); states.clear(); needsReseed = false; }
-      for (const file of allFiles()) {
+      const files = allFiles();
+      if (needsReseed) {
+        // Resume after pause/disabled start: advance every offset to EOF so the
+        // paused interval isn't taught, and drop stale cross-batch joins.
+        for (const f of files) { try { offsets.set(f, statSync(f).size); } catch { /* ignore */ } }
+        states.clear();
+        needsReseed = false;
+      }
+      for (const file of files) {
         const src = fileTool.get(file)!;
         const start = offsets.has(file) ? offsets.get(file)! : 0;
         const { lines, offset } = readLinesSince(file, start);

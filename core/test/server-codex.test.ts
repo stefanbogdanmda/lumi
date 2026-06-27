@@ -21,7 +21,6 @@ describe("server Codex capture", () => {
       home, generator: new MockGenerator(), pollMs: 50,
       claudeRoots: [], codexRoots: [codexRoot],
     });
-    await new Promise((r) => setTimeout(r, 80));
     appendFileSync(file, JSON.stringify({ type: "response_item", timestamp: "t1", payload: {
       type: "function_call", name: "shell", arguments: JSON.stringify({ command: "git commit -m z", workdir: "C:/p" }), call_id: "c1",
     } }) + "\n");
