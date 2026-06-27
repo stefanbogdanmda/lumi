@@ -73,7 +73,7 @@ export function startLumiTerminal(opts: LumiTerminalOptions): LumiTerminalSessio
 
   const flush = async (): Promise<void> => {
     if (idleTimer) { clearTimeout(idleTimer); idleTimer = undefined; }
-    if (flushing || pending === 0) return;
+    if (stopped || flushing || pending === 0) return;
     pending = 0; // reset BEFORE the async drain so bytes arriving during drain accrue into the NEXT flush
     flushing = true;
     try {

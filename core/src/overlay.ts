@@ -1081,7 +1081,6 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       }
     }
   </style>
-  <link rel="stylesheet" href="/vendor/xterm.css">
 </head>
 <body>
 
@@ -2581,6 +2580,8 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   var termInited = false;
   function initTerminal() {
     if (termInited) return; termInited = true;
+    var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/vendor/xterm.css';
+    document.head.appendChild(css);
     fetch('/api/terminal/status').then(function (r) { return r.json(); }).then(function (st) {
       if (!st || !st.available) { document.getElementById('term-unavail').style.display = ''; return; }
       var s = document.createElement('script'); s.src = '/vendor/xterm.js';
@@ -2594,6 +2595,17 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       s.onerror = function () { document.getElementById('term-unavail').style.display = ''; };
       document.head.appendChild(s);
     }).catch(function () { document.getElementById('term-unavail').style.display = ''; });
+  }
+  function refreshTermRec() {
+    fetch('/api/consent').then(function (r) { return r.json(); }).then(function (c) {
+      var on = !!(c && c.enabled && c.tools && c.tools['lumi-terminal'] === true && (!c.scopes || c.scopes.output !== false));
+      var rec = document.getElementById('term-rec');
+      if (!rec) return;
+      rec.textContent = on ? '● recording output' : 'display only — capture off';
+      rec.style.color = on ? '#e5484d' : '';
+      rec.style.opacity = on ? '1' : '0.7';
+      rec.style.display = '';
+    }).catch(function () {});
   }
   var lumiFit = null;
   function openTerminal() {
@@ -2613,8 +2625,12 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       else if (m.type === 'exit') term.write('\r\n[lumi] shell exited (' + m.exitCode + ')\r\n');
       else if (m.type === 'unavailable') { document.getElementById('term-unavail').style.display = ''; }
     };
-    ws.onopen = function () { document.getElementById('term-rec').style.display = ''; };
-    ws.onclose = function () { document.getElementById('term-rec').style.display = 'none'; };
+    var termRecTimer = null;
+    ws.onopen = function () { refreshTermRec(); termRecTimer = setInterval(refreshTermRec, 5000); };
+    ws.onclose = function () {
+      if (termRecTimer) { clearInterval(termRecTimer); termRecTimer = null; }
+      var rec = document.getElementById('term-rec'); if (rec) rec.style.display = 'none';
+    };
     term.onData(function (d) { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'input', data: d })); });
     term.onResize(function (sz) { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'resize', cols: sz.cols, rows: sz.rows })); });
   }
