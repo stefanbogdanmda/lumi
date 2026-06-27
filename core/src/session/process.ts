@@ -27,9 +27,10 @@ export function applyConsent(events: SessionEvent[], consent: ConsentConfig): Se
   for (const e of events) {
     if (!allowsTool(consent, e.tool)) continue;
     if (!allowsProject(consent, e.cwd)) continue;
-    const next: SessionEvent = { ...e };
+    const next: SessionEvent = { ...e, ...(e.files ? { files: [...e.files] } : {}) };
     if (!allowsScope(consent, "aiText")) delete next.text;
     if (!allowsScope(consent, "commands")) delete next.command;
+    // exitCode is intentionally not gated — non-content metadata (a number) that never enters signal text.
     if (!allowsScope(consent, "output")) { delete next.stdout; delete next.stderr; }
     if (!next.text && !next.command && !next.stdout && !next.stderr && !(next.files && next.files.length)) continue;
     out.push(next);

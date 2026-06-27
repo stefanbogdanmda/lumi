@@ -53,4 +53,38 @@ describe("applyConsent", () => {
     expect(out[0].command).toBeUndefined();
     expect(out[0].stdout).toBe("2 passed");
   });
+
+  it("keeps files-only event when all text scopes are off", () => {
+    const out = applyConsent(
+      [ev({ files: ["src/index.ts"] })],
+      cfg({ scopes: { commands: false, output: false, aiText: false } }),
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].files).toEqual(["src/index.ts"]);
+  });
+
+  it("drops a text-only event when aiText scope is off", () => {
+    const out = applyConsent(
+      [ev({ role: "assistant", text: "Here is the refactored code" })],
+      cfg({ scopes: { commands: true, output: true, aiText: false } }),
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("partially filters a mixed batch (drops disabled tool, keeps the rest)", () => {
+    const events = [
+      ev({ tool: "codex", command: "git log" }),
+      ev({ tool: "claude-code", text: "done" }),
+    ];
+    const out = applyConsent(events, cfg({ tools: { codex: false } }));
+    expect(out).toHaveLength(1);
+    expect(out[0].text).toBe("done");
+  });
+
+  it("does not mutate the input event's files array", () => {
+    const input = ev({ files: ["src/index.ts"] });
+    const out = applyConsent([input], cfg({}));
+    out[0].files!.push("src/mutated.ts");
+    expect(input.files).toEqual(["src/index.ts"]);
+  });
 });
