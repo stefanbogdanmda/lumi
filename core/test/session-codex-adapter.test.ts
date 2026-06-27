@@ -70,4 +70,46 @@ describe("extractCodexEvents", () => {
     ], st);
     expect(events).toEqual([]); // agent_message is a duplicate; user prompt not captured
   });
+
+  it("joins multiple output_text/text blocks with a newline", () => {
+    const st = makeCodexState();
+    const events = extractCodexEvents([
+      line({ type: "response_item", payload: {
+        type: "message", role: "assistant",
+        content: [
+          { type: "output_text", text: "Step one." },
+          { type: "text", text: "Step two." },
+        ],
+      } }),
+    ], st);
+    expect(events[0]?.text).toBe("Step one.\nStep two.");
+  });
+
+  it("does not throw when arguments is a non-JSON string", () => {
+    const st = makeCodexState();
+    expect(() => extractCodexEvents([
+      line({ type: "response_item", payload: {
+        type: "function_call", name: "shell", call_id: "c1", arguments: "%%invalid%%",
+      } }),
+    ], st)).not.toThrow();
+    expect(st.pending.size).toBe(0);
+  });
+
+  it("ignores a named shell function_call with no command argument", () => {
+    const st = makeCodexState();
+    extractCodexEvents([
+      line({ type: "response_item", payload: {
+        type: "function_call", name: "shell", call_id: "c2", arguments: JSON.stringify({ env: "CI=1" }),
+      } }),
+    ], st);
+    expect(st.pending.size).toBe(0);
+  });
+
+  it("emits no event for an assistant message with empty content", () => {
+    const st = makeCodexState();
+    const events = extractCodexEvents([
+      line({ type: "response_item", payload: { type: "message", role: "assistant", content: [] } }),
+    ], st);
+    expect(events).toHaveLength(0);
+  });
 });

@@ -64,6 +64,9 @@ export function extractCodexEvents(lines: string[], state: CodexState): SessionE
       let args: any = {};
       try { args = JSON.parse(p.arguments ?? "{}"); } catch { args = {}; }
       const command = typeof args.command === "string" ? args.command.trim() : "";
+      // Treat any function_call carrying a `command` arg as shell, covering future
+      // Codex tool names we don't know yet. If a non-shell tool ever gains a
+      // `command` key, add an explicit exclusion here.
       const isShell = name === "shell" || name === "shell_command" || !!command;
       if (isShell && command) {
         state.pending.set(p.call_id, {
