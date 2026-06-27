@@ -15,7 +15,11 @@ export function secureDir(dir: string): boolean {
   try {
     // execFileSync (not execSync) passes the path as an argv element, not
     // interpolated into a shell string — eliminates any shell-injection surface.
-    execFileSync("icacls", [dir, "/inheritance:r", "/grant:r", `${user}:(OI)(CI)F`], { stdio: "ignore" });
+    execFileSync(
+      "icacls",
+      [dir, "/inheritance:r", "/grant:r", `${user}:(OI)(CI)F`],
+      { stdio: "ignore" },
+    );
     return true;
   } catch {
     return false; // icacls missing / permission denied — leave inherited ACLs

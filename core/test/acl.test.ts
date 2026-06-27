@@ -16,4 +16,16 @@ describe("secureDir", () => {
   it("returns false for a missing directory without throwing", () => {
     expect(secureDir(join(tmpdir(), "nope-lumi-acl"))).toBe(false);
   });
+
+  it("returns false when USERNAME env var is absent", () => {
+    const saved = process.env.USERNAME;
+    delete process.env.USERNAME;
+    try {
+      const dir = mkdtempSync(join(tmpdir(), "lumi-acl-"));
+      expect(secureDir(dir)).toBe(false);
+    } finally {
+      if (saved !== undefined) process.env.USERNAME = saved;
+      else delete process.env.USERNAME;
+    }
+  });
 });
