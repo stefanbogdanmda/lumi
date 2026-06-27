@@ -35,4 +35,29 @@ describe("createCleanTextSink", () => {
     sink.feed("");
     expect((await sink.drain()).trim()).toBe("");
   });
+
+  it("preserves internal blank lines", async () => {
+    const sink = createCleanTextSink({ cols: 80, rows: 10 });
+    sink.feed("line1\r\n\r\nline2\r\n");
+    const out = await sink.drain();
+    expect(out).toContain("line1\n\nline2");
+  });
+
+  it("resolves carriage-return overwrites to final rendered state", async () => {
+    const sink = createCleanTextSink({ cols: 80, rows: 5 });
+    sink.feed("abcde\rXY"); // no trailing newline; cursor back to col 0
+    const out = await sink.drain();
+    expect(out).toContain("XYcde");
+    expect(out).not.toContain("abcde");
+  });
+
+  it("does not duplicate a no-trailing-newline chunk across drains", async () => {
+    const sink = createCleanTextSink({ cols: 80, rows: 5 });
+    sink.feed("partial");
+    expect(await sink.drain()).toContain("partial");
+    sink.feed("next\r\n");
+    const out = await sink.drain();
+    expect(out).toContain("next");
+    expect(out).not.toContain("partial");
+  });
 });
