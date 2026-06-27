@@ -1,5 +1,6 @@
 import type { FeedEvent } from "../feed";
-import { lessonEvent } from "../feed";
+import { lessonEvent, stuckEvent } from "../feed";
+import { detectStuck, unstuckAdvice } from "../unstuck";
 import { redactSecrets } from "../redact";
 import type { OutputSignals } from "../types";
 import type { Lumi } from "../lumi";
@@ -65,6 +66,8 @@ export function buildSessionSignals(events: SessionEvent[]): OutputSignals {
 export interface ProcessOptions {
   /** Layered consent applied per event. Omit to capture everything (tests). */
   consent?: ConsentConfig;
+  /** Cross-batch dedupe of fix-loop cards (key = repeated error or first reason). */
+  stuckSeen?: Set<string>;
 }
 
 /**
@@ -108,5 +111,25 @@ export async function processSessionEvents(
     });
     lumi.markLearned(l.conceptId);
   }
+
+  // Live fix-loop coaching: if the redacted text shows a stuck loop, surface ONE
+  // proactive card. Deduped across batches via the caller's stuckSeen set so a
+  // persistent loop doesn't spam the feed.
+  const stuck = detectStuck(signals.text ?? "");
+  if (stuck.stuck) {
+    const key = stuck.repeatedError ?? stuck.reasons[0] ?? "stuck";
+    if (!opts.stuckSeen || !opts.stuckSeen.has(key)) {
+      opts.stuckSeen?.add(key);
+      out.push({
+        ...stuckEvent({
+          source,
+          advice: unstuckAdvice(stuck),
+          ...(stuck.repeatedError ? { repeatedError: stuck.repeatedError } : {}),
+        }),
+        ts,
+      });
+    }
+  }
+
   return out;
 }

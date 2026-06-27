@@ -110,6 +110,7 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
   const offsets = new Map<string, number>();
   const states = new Map<string, unknown>();        // file → adapter state
   const fileTool = new Map<string, SessionAdapter>(); // file → owning adapter
+  const stuckSeen = new Map<string, Set<string>>(); // file → seen stuck signatures
   let draining = false;
   let needsReseed = true;
 
@@ -140,6 +141,7 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
         // paused interval isn't taught, and drop stale cross-batch joins.
         for (const f of files) { try { offsets.set(f, statSync(f).size); } catch { /* ignore */ } }
         states.clear();
+        stuckSeen.clear();
         needsReseed = false;
       }
       for (const file of files) {
@@ -153,8 +155,11 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
         const sessionEvents = src.extract(lines, state);
         if (sessionEvents.length === 0) continue;
         try {
+          let seen = stuckSeen.get(file);
+          if (!seen) { seen = new Set(); stuckSeen.set(file, seen); }
           const feed = await processSessionEvents(sessionEvents, opts.lumi, src.tool, {
             ...(opts.getConsent ? { consent: opts.getConsent() } : {}),
+            stuckSeen: seen,
           });
           if (feed.length) await opts.onEvents(feed);
         } catch (e) { opts.onError?.(e); }
