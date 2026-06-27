@@ -4,9 +4,11 @@ import {
   profilePath, cachePath, feedPath, lumiHome,
   levelFromCount, milestoneFor, CONCEPTS,
   currentEntitlement, verifyLicense, JsonFileLicenseStore,
+  captureStatus,
 } from "@lumi/core";
 import type { Lesson } from "@lumi/core";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import { HookBridge } from "./hookBridge";
 import { LumiPanel } from "./panelView";
 import { handleMessage } from "./messageHandler";
@@ -44,6 +46,35 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider("lumiPanel", panel)
   );
 
+  const recItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  recItem.text = "$(circle-slash) Lumi";
+  recItem.tooltip = "Lumi is not capturing AI sessions";
+  recItem.show();
+  context.subscriptions.push(recItem);
+
+  const claudeRoots = [join(homedir(), ".claude", "projects")];
+  const codexRoots = [join(homedir(), ".codex", "sessions")];
+  function refreshRec(): void {
+    try {
+      const s = captureStatus(lumiHome(), [
+        { tool: "claude-code", roots: claudeRoots },
+        { tool: "codex", roots: codexRoots },
+      ]);
+      if (s.recording) {
+        recItem.text = "$(record) Lumi";
+        recItem.tooltip = `Lumi is capturing ${s.tool}${s.project ? " · " + s.project : ""}`;
+      } else {
+        recItem.text = "$(circle-slash) Lumi";
+        recItem.tooltip = "Lumi is not capturing AI sessions";
+      }
+    } catch {
+      // transient FS error — leave the status bar at its last known state
+    }
+  }
+  refreshRec();
+  const recTimer = setInterval(refreshRec, 5000);
+  context.subscriptions.push({ dispose: () => clearInterval(recTimer) });
+
   const configured = vscode.workspace.getConfiguration("lumi").get<string>("watchFile");
   const watch = (configured && configured.trim()) ? configured.trim() : feedPath();
 
@@ -57,10 +88,14 @@ export function activate(context: vscode.ExtensionContext): void {
     });
   }
 
-  const bridge = new HookBridge(watch, (lesson: Lesson) => {
-    panel.showLesson(lesson);
-    postProgress();
-  });
+  const bridge = new HookBridge(
+    watch,
+    (lesson: Lesson) => { panel.showLesson(lesson); postProgress(); },
+    (advice: string) => {
+      vscode.window.showWarningMessage("Lumi: you may be stuck in a fix-loop", "Show advice")
+        .then((pick) => { if (pick) vscode.window.showInformationMessage(advice); });
+    },
+  );
   bridge.start();
   context.subscriptions.push({ dispose: () => bridge.dispose() });
   postProgress();

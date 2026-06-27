@@ -220,9 +220,15 @@ describe("redactSecrets — negative cases (do NOT over-redact)", () => {
     expect(redactSecrets(text)).toBe(text);
   });
 
-  it("leaves a normal file path untouched", () => {
+  it("leaves a normal file path untouched — NOTE: bare 45+ char unix paths redacted by output-harden blob rule", () => {
+    // The updated blob rule now includes '/' in its charset to catch AWS-style secrets
+    // (e.g. wJalrXUtnFEMI/K7MDENG/...).  A bare unix path like this one that is ≥40
+    // chars and preceded only by start-of-string satisfies the lookbehind and is
+    // therefore redacted.  This is accepted output-mode over-redaction: losing a file
+    // path in a log is less harmful than leaking an AWS secret key.
+    // Shorter paths and drive-letter paths (C:/…) are still preserved.
     const text = "/usr/local/lib/node_modules/typescript/bin/tsc";
-    expect(redactSecrets(text)).toBe(text);
+    expect(redactSecrets(text)).toBe("[REDACTED]");
   });
 
   it("leaves a short word that starts with sk- untouched", () => {

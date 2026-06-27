@@ -11,7 +11,11 @@ export class HookBridge {
   private watcher?: fs.FSWatcher;
   private intervalId?: ReturnType<typeof setInterval>;
 
-  constructor(private feedPath: string, private onLesson: (lesson: Lesson) => void) {}
+  constructor(
+    private feedPath: string,
+    private onLesson: (lesson: Lesson) => void,
+    private onStuck?: (advice: string) => void,
+  ) {}
 
   start(): void {
     fs.mkdirSync(path.dirname(this.feedPath), { recursive: true });
@@ -27,7 +31,6 @@ export class HookBridge {
     const result = readEventsSince(this.feedPath, this.offset);
     this.offset = result.offset;
     for (const event of result.events) {
-      if (event.type !== "lesson") continue;
       if (this.seenIds.has(event.id)) continue;
       this.seenIds.add(event.id);
       // Cap the dedupe set to avoid unbounded growth over long sessions.
@@ -35,6 +38,12 @@ export class HookBridge {
       // re-reading old events; the Set only guards against duplicate delivery
       // in the brief window after a file truncation/resync.
       if (this.seenIds.size > 1000) this.seenIds.clear();
+
+      if (event.type === "stuck" && event.stuck && this.onStuck) {
+        this.onStuck(event.stuck.advice);
+        continue;
+      }
+      if (event.type !== "lesson") continue;
       const lesson = lessonFromEvent(event);
       if (lesson) this.onLesson(lesson);
     }

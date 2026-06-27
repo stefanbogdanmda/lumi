@@ -69,6 +69,24 @@ All driven by one shared **lesson-event feed**, so every surface stays in sync:
 ## Which tools it works with
 Lumi's brain is **tool-agnostic**.
 - **Claude Code** — live-tested across terminal, desktop, and mobile (inline plugin).
+- **Live AI-session capture (Claude Code):** Lumi can passively read Claude Code's
+  own on-disk session files — the assistant's replies, the commands it runs, **and
+  their full output** — and teach from them in real time. This is **off by default**
+  and turns on only after you opt in. Secrets are dropped or redacted before anything
+  is saved, and capture is confined to the AI tool's own session files: Lumi does not
+  read other terminals' raw output or scrape your screen. (Raw output from terminals
+  you run yourself is a separate, opt-in "Lumi Terminal" feature, coming later.)
+- **Codex sessions:** the same passive, opt-in capture now also reads OpenAI Codex
+  session files (`~/.codex/sessions/**`), with identical denylist + redaction.
+- **You control what's captured:** a layered consent file (`~/.lumi/consent.json`)
+  lets you turn capture on/off globally, per tool, per project, and per scope
+  (commands / output / AI replies). A recording indicator (overlay dot + VS Code
+  status bar) shows exactly when Lumi is reading and from which tool/project.
+- **Bounded + deletable:** captured lessons are kept for 30 days / 50 MB and can be
+  wiped at any time; on Windows the Lumi home folder is locked to your account.
+- **Stuck? Lumi tells you:** when it detects a fix-loop (same error, repeated
+  retries) it surfaces one plain-English coaching card instead of letting credits
+  burn silently.
 - **Codex, Cursor, Gemini CLI, Copilot, OpenCode** — adapter hooks ship today, verified offline;
   live-verify on a machine with that tool installed. `lumi setup` wires them up for you.
 - **Any tool, including browser builders** (Lovable, Bolt, v0, Replit) — use **paste mode**: paste
