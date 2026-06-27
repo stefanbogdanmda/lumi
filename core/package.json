@@ -21,8 +21,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@xterm/headless": "^5.5.0",
-    "@xterm/addon-serialize": "^0.13.0"
+    "@xterm/headless": "^5.5.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

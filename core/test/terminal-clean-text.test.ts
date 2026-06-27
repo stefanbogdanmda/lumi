@@ -20,6 +20,16 @@ describe("createCleanTextSink", () => {
     expect(out).not.toContain("first");
   });
 
+  it("captures lines that scrolled beyond the viewport (reads scrollback)", async () => {
+    const sink = createCleanTextSink({ cols: 80, rows: 5 }); // tiny viewport
+    let feed = "";
+    for (let i = 1; i <= 12; i++) feed += "line" + i + "\r\n";
+    sink.feed(feed);
+    const out = await sink.drain();
+    expect(out).toContain("line1");   // scrolled off the 5-row viewport
+    expect(out).toContain("line12");  // newest
+  });
+
   it("returns empty-ish text for a blank feed", async () => {
     const sink = createCleanTextSink();
     sink.feed("");
