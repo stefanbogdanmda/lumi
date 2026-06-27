@@ -74,7 +74,7 @@ export function startLumiTerminal(opts: LumiTerminalOptions): LumiTerminalSessio
   const flush = async (): Promise<void> => {
     if (idleTimer) { clearTimeout(idleTimer); idleTimer = undefined; }
     if (flushing || pending === 0) return;
-    pending = 0;
+    pending = 0; // reset BEFORE the async drain so bytes arriving during drain accrue into the NEXT flush
     flushing = true;
     try {
       const clean = await sink.drain();
@@ -101,12 +101,13 @@ export function startLumiTerminal(opts: LumiTerminalOptions): LumiTerminalSessio
   };
 
   session.onData((data) => {
-    opts.onOutput(data);          // display always
-    sink.feed(data);              // capture buffer
+    if (stopped) return;                 // ignore late callbacks after stop()/dispose()
+    opts.onOutput(data);                 // display always
+    sink.feed(data);                     // capture buffer
     pending += data.length;
-    if (pending >= flushBytes) { void flush(); return; }
+    if (pending >= flushBytes) void flush(); // fire immediately…
     if (idleTimer) clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => { void flush(); }, flushIdleMs);
+    idleTimer = setTimeout(() => { void flush(); }, flushIdleMs); // …AND always arm the idle fallback
   });
 
   session.onExit((e) => { void flush().finally(() => opts.onExit(e)); });

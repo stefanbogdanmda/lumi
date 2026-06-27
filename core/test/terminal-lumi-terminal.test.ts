@@ -105,4 +105,46 @@ describe("startLumiTerminal", () => {
       term.stop();
     } finally { delete process.env.LUMI_NO_CAPTURE; }
   });
+
+  it("captures via the byte threshold (idle timer not relied on)", async () => {
+    const backend = new FakePtyBackend();
+    const events: FeedEvent[] = [];
+    const term = startLumiTerminal({
+      backend, lumi: newLumi(), cwd: "C:/p",
+      onOutput: () => {}, onExit: () => {},
+      onEvents: (e) => { events.push(...e); },
+      getConsent: () => onCfg(), flushIdleMs: 100000, flushBytes: 20,
+    });
+    backend.sessions[0].emit("git commit -m a-reasonably-long-message\r\n");
+    await tick(80);
+    expect(events.some((e) => e.source === "lumi-terminal")).toBe(true);
+    term.stop();
+  });
+
+  it("does not forward raw secrets to onEvents (redaction pipeline wired)", async () => {
+    const backend = new FakePtyBackend();
+    const events: FeedEvent[] = [];
+    const term = startLumiTerminal({
+      backend, lumi: newLumi(), cwd: "C:/p",
+      onOutput: () => {}, onExit: () => {},
+      onEvents: (e) => { events.push(...e); },
+      getConsent: () => onCfg(), flushIdleMs: 30,
+    });
+    const secret = "ghp_" + "a".repeat(36);
+    backend.sessions[0].emit("token " + secret + " end\r\n");
+    await tick(120);
+    expect(JSON.stringify(events)).not.toContain(secret);
+    term.stop();
+  });
+
+  it("ignores late onData after stop() without throwing", async () => {
+    const backend = new FakePtyBackend();
+    const term = startLumiTerminal({
+      backend, lumi: newLumi(), cwd: "C:/p",
+      onOutput: () => {}, onExit: () => {},
+      onEvents: () => {}, getConsent: () => onCfg(), flushIdleMs: 30,
+    });
+    term.stop();
+    expect(() => backend.sessions[0].emit("late output\r\n")).not.toThrow();
+  });
 });
