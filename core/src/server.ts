@@ -104,6 +104,10 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   let xtermPkgDir: string | null = null;
   try { xtermPkgDir = join(require.resolve("@xterm/xterm/package.json"), ".."); } catch { /* not installed yet */ }
 
+  // Resolve the xterm fit addon's UMD entry once (null until installed).
+  let fitJsPath: string | null = null;
+  try { fitJsPath = require.resolve("@xterm/addon-fit"); } catch { /* not installed yet */ }
+
   // Harden the home dir (Windows ACL; POSIX already 0700) and bound the feed at
   // startup. Rotation also runs hourly so a long-lived overlay stays bounded.
   secureDir(home);
@@ -216,6 +220,17 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
         } catch {
           sendJson(res, 404, { error: "xterm assets unavailable" });
         }
+        return;
+      }
+
+      // GET /vendor/addon-fit.js — xterm fit addon (UMD) for the terminal panel
+      if (method === "GET" && url === "/vendor/addon-fit.js") {
+        if (!fitJsPath) { sendJson(res, 404, { error: "xterm addon-fit unavailable" }); return; }
+        try {
+          const buf = fsReadFileSync(fitJsPath);
+          res.writeHead(200, { "Content-Type": "application/javascript; charset=utf-8", "Content-Length": buf.length, "Cache-Control": "public, max-age=86400" });
+          res.end(buf);
+        } catch { sendJson(res, 404, { error: "xterm addon-fit unavailable" }); }
         return;
       }
 

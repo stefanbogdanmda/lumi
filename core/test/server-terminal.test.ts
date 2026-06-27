@@ -31,4 +31,13 @@ describe("server terminal wiring", () => {
     const body = await res.text();
     expect(body.length).toBeGreaterThan(1000);
   });
+
+  it("serves addon-fit.js with a JavaScript content-type", async () => {
+    const home = mkdtempSync(join(tmpdir(), "lumi-term-"));
+    server = createOverlayServer({ home, generator: new MockGenerator(), pollMs: 1000, claudeRoots: [], codexRoots: [] });
+    const port = await listen();
+    const res = await fetch(`http://127.0.0.1:${port}/vendor/addon-fit.js`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type") || "").toContain("javascript");
+  });
 });

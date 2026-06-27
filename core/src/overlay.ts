@@ -2,8 +2,11 @@
  * Self-contained HTML document for the Lumi web overlay (roadmap 10.2).
  *
  * Design notes:
- *  - No external resources; all style and script are inline.
- *  - CSP allows only 'unsafe-inline' styles/scripts and 'self' for fetch/SSE.
+ *  - Style and core script are inline. The one exception is the terminal panel,
+ *    which lazily loads /vendor/xterm.css|js + /vendor/addon-fit.js from the
+ *    same origin only when the user opens it.
+ *  - CSP allows 'unsafe-inline' styles/scripts, plus 'self' for fetch/SSE and the
+ *    lazily-loaded same-origin xterm assets.
  *  - Always-on-top behaviour is set by the OS window manager or the Electron/Tauri
  *    shell that hosts this page; the browser itself does not expose that API.
  *  - escapeHtml() is the single guard for every dynamic string.
@@ -2581,15 +2584,27 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     fetch('/api/terminal/status').then(function (r) { return r.json(); }).then(function (st) {
       if (!st || !st.available) { document.getElementById('term-unavail').style.display = ''; return; }
       var s = document.createElement('script'); s.src = '/vendor/xterm.js';
-      s.onload = function () { openTerminal(); };
+      s.onload = function () {
+        // Load the fit addon next; it's optional, so open even if it fails.
+        var f = document.createElement('script'); f.src = '/vendor/addon-fit.js';
+        f.onload = function () { openTerminal(); };
+        f.onerror = function () { openTerminal(); };
+        document.head.appendChild(f);
+      };
       s.onerror = function () { document.getElementById('term-unavail').style.display = ''; };
       document.head.appendChild(s);
     }).catch(function () { document.getElementById('term-unavail').style.display = ''; });
   }
+  var lumiFit = null;
   function openTerminal() {
     var TermCtor = window.Terminal; if (!TermCtor) { document.getElementById('term-unavail').style.display = ''; return; }
     var term = new TermCtor({ convertEol: true, fontSize: 12, theme: { background: '#000' } });
+    var FitCtor = window.FitAddon && window.FitAddon.FitAddon;
+    lumiFit = FitCtor ? new FitCtor() : null;
+    if (lumiFit) { try { term.loadAddon(lumiFit); } catch (e) { lumiFit = null; } }
     term.open(document.getElementById('term-mount'));
+    if (lumiFit) { try { lumiFit.fit(); } catch (e) {} }
+    window.addEventListener('resize', function () { if (lumiFit) { try { lumiFit.fit(); } catch (e) {} } });
     var proto = location.protocol === 'https:' ? 'wss' : 'ws';
     var ws = new WebSocket(proto + '://' + location.host + '/term');
     ws.onmessage = function (ev) {
@@ -2610,12 +2625,21 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
 
   if (termToggleBtn) {
     termToggleBtn.addEventListener('click', function () {
-      if (termPanel) termPanel.style.display = '';
-      initTerminal();
+      if (!termPanel) return;
+      // Panel starts with inline display:none; any non-'none' value means shown.
+      var isShown = termPanel.style.display !== 'none';
+      termPanel.style.display = isShown ? 'none' : '';
+      if (!isShown) {
+        initTerminal();
+        // Re-fit when re-opening: the panel may have resized while hidden.
+        if (lumiFit) { try { lumiFit.fit(); } catch (e) {} }
+      }
     });
   }
   if (termCloseBtn) {
     termCloseBtn.addEventListener('click', function () {
+      // Hiding only collapses the panel; the WS/shell session stays alive so
+      // re-opening rejoins the same session (intentional).
       if (termPanel) termPanel.style.display = 'none';
     });
   }
