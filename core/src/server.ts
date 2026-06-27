@@ -32,6 +32,7 @@ import { isPro } from "./entitlements";
 import type { LicenseResult } from "./license";
 import { rotateFeed, purgeData } from "./retention";
 import { secureDir } from "./acl";
+import { captureStatus } from "./capture-status";
 
 export interface OverlayServerDeps {
   home?: string;
@@ -175,6 +176,15 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
       // GET /api/consent — current layered consent (defaults when no file)
       if (method === "GET" && url === "/api/consent") {
         sendJson(res, 200, loadConsent(home));
+        return;
+      }
+
+      // GET /api/capture-status — recording indicator (same consent the watcher reads)
+      if (method === "GET" && url === "/api/capture-status") {
+        sendJson(res, 200, captureStatus(home, [
+          ...(claudeRoots.length ? [{ tool: "claude-code", roots: claudeRoots }] : []),
+          ...(codexRoots.length ? [{ tool: "codex", roots: codexRoots }] : []),
+        ]));
         return;
       }
 

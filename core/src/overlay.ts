@@ -1086,6 +1086,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   <!-- Header bar -->
   <div id="widget-header">
     <span id="brand-dot" aria-hidden="true"></span>
+    <span id="rec-dot" title="Lumi is not capturing" style="display:none;width:8px;height:8px;border-radius:50%;background:#e5484d;margin-left:8px;box-shadow:0 0 6px #e5484d;"></span>
     <span id="header-title">Lumi <span class="tagline">&#xB7; learn as you build</span></span>
     <span id="tier-pill" title="Your current plan">Free</span>
   </div>
@@ -1614,6 +1615,44 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     return card;
   }
 
+  /* ── Fix-loop (stuck) card ──────────────────────────────────────────── */
+  function buildStuckCard(stuck, id) {
+    var card = document.createElement('div');
+    card.className = 'card failure-card';
+    if (id) card.setAttribute('data-lesson-id', id);
+    var head = document.createElement('div');
+    head.className = 'failure-head';
+    var badge = document.createElement('span');
+    badge.className = 'failure-badge';
+    badge.textContent = '⚠ You may be stuck in a fix-loop';
+    head.appendChild(badge);
+    card.appendChild(head);
+    var body = document.createElement('div');
+    body.className = 'failure-body';
+    var p = document.createElement('p');
+    p.textContent = stuck.advice || '';
+    body.appendChild(p);
+    card.appendChild(body);
+    return card;
+  }
+
+  /* ── Recording indicator — polls /api/capture-status every 5 s ─────── */
+  function refreshRecDot() {
+    fetch('/api/capture-status').then(function (r) { return r.json(); }).then(function (s) {
+      var dot = document.getElementById('rec-dot');
+      if (!dot) return;
+      if (s && s.recording) {
+        dot.style.display = 'inline-block';
+        dot.title = 'Lumi is capturing ' + (s.tool || 'AI session') + (s.project ? ' · ' + s.project : '');
+      } else {
+        dot.style.display = 'none';
+        dot.title = 'Lumi is not capturing';
+      }
+    }).catch(function () { /* server not ready */ });
+  }
+  refreshRecDot();
+  setInterval(refreshRecDot, 5000);
+
   /* ── SSE: Lessons tab ────────────────────────────────────────────────── */
   var es = new EventSource('/events');
 
@@ -1627,6 +1666,13 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
         lessonsEmpty.style.display = 'none';
         lessonsList.insertBefore(buildFailureCard(data, fid), lessonsList.firstChild);
         fetchProgress();
+        return;
+      }
+      if (data && data.type === 'stuck' && data.stuck) {
+        var sid = lessonIdOf(data);
+        if (isLessonDismissed(sid)) return;
+        lessonsEmpty.style.display = 'none';
+        lessonsList.insertBefore(buildStuckCard(data.stuck, sid), lessonsList.firstChild);
         return;
       }
       if (data && data.lesson && data.lesson.title) {
