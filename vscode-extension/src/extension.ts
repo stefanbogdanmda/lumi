@@ -55,16 +55,20 @@ export function activate(context: vscode.ExtensionContext): void {
   const claudeRoots = [join(homedir(), ".claude", "projects")];
   const codexRoots = [join(homedir(), ".codex", "sessions")];
   function refreshRec(): void {
-    const s = captureStatus(lumiHome(), [
-      { tool: "claude-code", roots: claudeRoots },
-      { tool: "codex", roots: codexRoots },
-    ]);
-    if (s.recording) {
-      recItem.text = "$(record) Lumi";
-      recItem.tooltip = `Lumi is capturing ${s.tool}${s.project ? " · " + s.project : ""}`;
-    } else {
-      recItem.text = "$(circle-slash) Lumi";
-      recItem.tooltip = "Lumi is not capturing AI sessions";
+    try {
+      const s = captureStatus(lumiHome(), [
+        { tool: "claude-code", roots: claudeRoots },
+        { tool: "codex", roots: codexRoots },
+      ]);
+      if (s.recording) {
+        recItem.text = "$(record) Lumi";
+        recItem.tooltip = `Lumi is capturing ${s.tool}${s.project ? " · " + s.project : ""}`;
+      } else {
+        recItem.text = "$(circle-slash) Lumi";
+        recItem.tooltip = "Lumi is not capturing AI sessions";
+      }
+    } catch {
+      // transient FS error — leave the status bar at its last known state
     }
   }
   refreshRec();
