@@ -42,4 +42,24 @@ describe("consent API", () => {
     expect(get.scopes.aiText).toBe(false);
     expect(readFileSync(join(home, "consent.json"), "utf8")).toContain("\"enabled\"");
   });
+
+  it("POST /api/consent rejects a non-object (array) body with 400", async () => {
+    const home = mkdtempSync(join(tmpdir(), "lumi-capi-"));
+    server = createOverlayServer({ home, generator: new MockGenerator(), pollMs: 1000 });
+    const port = await listen();
+    const res = await fetch(`http://127.0.0.1:${port}/api/consent`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "[]",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /api/consent rejects malformed JSON with 400", async () => {
+    const home = mkdtempSync(join(tmpdir(), "lumi-capi-"));
+    server = createOverlayServer({ home, generator: new MockGenerator(), pollMs: 1000 });
+    const port = await listen();
+    const res = await fetch(`http://127.0.0.1:${port}/api/consent`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "not json",
+    });
+    expect(res.status).toBe(400);
+  });
 });

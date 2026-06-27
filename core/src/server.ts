@@ -171,7 +171,7 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
           sendJson(res, status, { error: status === 413 ? "request entity too large" : "invalid JSON body" });
           return;
         }
-        if (!parsed || typeof parsed !== "object") {
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
           sendJson(res, 400, { error: "object body required" });
           return;
         }
