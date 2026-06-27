@@ -4,7 +4,9 @@ import { homedir } from "node:os";
 import { watchAiSessions, claudeAdapter, codexAdapter } from "./session/ai-monitor";
 import { isAiCaptureEnabled } from "./session/consent";
 import { loadConsent } from "./session/consent-config";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync as fsReadFileSync } from "node:fs";
+import { attachTerminalWebSocket } from "./terminal/ws";
+import { loadPtyBackend } from "./terminal/pty-backend";
 import { JsonFileProfile } from "./profile";
 import { JsonFileCache } from "./cache";
 import { lumiHome } from "./paths";
@@ -185,6 +187,31 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
           ...(claudeRoots.length ? [{ tool: "claude-code", roots: claudeRoots }] : []),
           ...(codexRoots.length ? [{ tool: "codex", roots: codexRoots }] : []),
         ]));
+        return;
+      }
+
+      // GET /api/terminal/status — is the native PTY backend available?
+      if (method === "GET" && url === "/api/terminal/status") {
+        sendJson(res, 200, { available: loadPtyBackend() !== null });
+        return;
+      }
+
+      // GET /vendor/xterm.js | /vendor/xterm.css — overlay terminal panel assets
+      if (method === "GET" && (url === "/vendor/xterm.js" || url === "/vendor/xterm.css")) {
+        try {
+          const pkgDir = join(require.resolve("@xterm/xterm/package.json"), "..");
+          const isCss = url.endsWith(".css");
+          const file = join(pkgDir, isCss ? "css/xterm.css" : "lib/xterm.js");
+          const buf = fsReadFileSync(file);
+          res.writeHead(200, {
+            "Content-Type": isCss ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8",
+            "Content-Length": buf.length,
+            "Cache-Control": "public, max-age=86400",
+          });
+          res.end(buf);
+        } catch {
+          sendJson(res, 404, { error: "xterm assets unavailable" });
+        }
         return;
       }
 
@@ -563,12 +590,23 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     }
   });
 
+  // Lumi Terminal: a spawned-shell PTY whose output feeds the capture pipeline.
+  // Display is unconditional; capture is gated by opt-in consent inside the orchestrator.
+  const stopTerminalWs = attachTerminalWebSocket(server, {
+    lumi,
+    cwd: () => process.cwd(),
+    getConsent: () => loadConsent(home),
+    onEvents: (events) => { for (const e of events) appendEvent(feedFile, e); },
+    onError: (e) => console.error("[lumi:terminal-ws]", e),
+  });
+
   // Stop both watchers when the server is closed so tests/processes don't
   // leak fs.watch handles or poll intervals.
   server.on("close", () => {
     clearInterval(rotateTimer);
     try { stopTerminalWatch(); } catch { /* already stopped */ }
     try { stopAiWatch(); } catch { /* already stopped */ }
+    try { stopTerminalWs(); } catch { /* already stopped */ }
   });
 
   return server;
