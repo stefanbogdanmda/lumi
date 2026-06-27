@@ -100,6 +100,10 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   const pollMs = deps.pollMs ?? 1000;
   const feedFile = join(home, "feed.jsonl");
 
+  // Resolve the vendored xterm asset dir once (null until @xterm/xterm is installed).
+  let xtermPkgDir: string | null = null;
+  try { xtermPkgDir = join(require.resolve("@xterm/xterm/package.json"), ".."); } catch { /* not installed yet */ }
+
   // Harden the home dir (Windows ACL; POSIX already 0700) and bound the feed at
   // startup. Rotation also runs hourly so a long-lived overlay stays bounded.
   secureDir(home);
@@ -198,10 +202,10 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
 
       // GET /vendor/xterm.js | /vendor/xterm.css — overlay terminal panel assets
       if (method === "GET" && (url === "/vendor/xterm.js" || url === "/vendor/xterm.css")) {
+        if (!xtermPkgDir) { sendJson(res, 404, { error: "xterm assets unavailable" }); return; }
         try {
-          const pkgDir = join(require.resolve("@xterm/xterm/package.json"), "..");
           const isCss = url.endsWith(".css");
-          const file = join(pkgDir, isCss ? "css/xterm.css" : "lib/xterm.js");
+          const file = join(xtermPkgDir, isCss ? "css/xterm.css" : "lib/xterm.js");
           const buf = fsReadFileSync(file);
           res.writeHead(200, {
             "Content-Type": isCss ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8",

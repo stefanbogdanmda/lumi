@@ -20,4 +20,12 @@ describe("server terminal wiring", () => {
     const body = await (await fetch(`http://127.0.0.1:${port}/api/terminal/status`)).json();
     expect(typeof body.available).toBe("boolean");
   });
+
+  it("GET /vendor/xterm.js returns 404 before @xterm/xterm is installed", async () => {
+    const home = mkdtempSync(join(tmpdir(), "lumi-term-"));
+    server = createOverlayServer({ home, generator: new MockGenerator(), pollMs: 1000, claudeRoots: [], codexRoots: [] });
+    const port = await listen();
+    const res = await fetch(`http://127.0.0.1:${port}/vendor/xterm.js`);
+    expect(res.status).toBe(404);
+  });
 });
