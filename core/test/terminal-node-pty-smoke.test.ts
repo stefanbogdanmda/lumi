@@ -18,6 +18,7 @@ maybe("node-pty real backend (smoke; skipped if unavailable)", () => {
       s.onExit(() => resolve(acc));
       setTimeout(() => resolve(acc), 3000);
     });
+    try { s.kill(); } catch { /* already exited */ }
     expect(out).toContain("lumi-smoke");
   });
 });
