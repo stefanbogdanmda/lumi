@@ -75,9 +75,15 @@ Lumi's brain is **tool-agnostic**.
   and turns on only after you opt in. Secrets are dropped or redacted before anything
   is saved, and capture is confined to the AI tool's own session files: Lumi does not
   read other terminals' raw output or scrape your screen. (Raw output from terminals
-  you run yourself is a separate, opt-in "Lumi Terminal" feature, coming later.)
+  you run yourself is captured by the separate, opt-in Lumi Terminal — see below.)
 - **Codex sessions:** the same passive, opt-in capture now also reads OpenAI Codex
   session files (`~/.codex/sessions/**`), with identical denylist + redaction.
+- **Lumi Terminal (your own shell):** Lumi can host a terminal where it owns the
+  shell, so it can capture the **raw output of commands you run yourself** — the
+  one thing transcript-reading can't see. It's opt-in per the `lumi-terminal`
+  tool in `~/.lumi/consent.json` (off by default); the same denylist + redaction
+  run before anything is saved. The terminal still *shows* you everything; only
+  what's persisted is gated. Terminals you open outside Lumi are not captured.
 - **You control what's captured:** a layered consent file (`~/.lumi/consent.json`)
   lets you turn capture on/off globally, per tool, per project, and per scope
   (commands / output / AI replies). A recording indicator (overlay dot + VS Code

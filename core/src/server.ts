@@ -4,7 +4,9 @@ import { homedir } from "node:os";
 import { watchAiSessions, claudeAdapter, codexAdapter } from "./session/ai-monitor";
 import { isAiCaptureEnabled } from "./session/consent";
 import { loadConsent } from "./session/consent-config";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync as fsReadFileSync } from "node:fs";
+import { attachTerminalWebSocket } from "./terminal/ws";
+import { loadPtyBackend } from "./terminal/pty-backend";
 import { JsonFileProfile } from "./profile";
 import { JsonFileCache } from "./cache";
 import { lumiHome } from "./paths";
@@ -98,6 +100,14 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   const pollMs = deps.pollMs ?? 1000;
   const feedFile = join(home, "feed.jsonl");
 
+  // Resolve the vendored xterm asset dir once (null until @xterm/xterm is installed).
+  let xtermPkgDir: string | null = null;
+  try { xtermPkgDir = join(require.resolve("@xterm/xterm/package.json"), ".."); } catch { /* not installed yet */ }
+
+  // Resolve the xterm fit addon's UMD entry once (null until installed).
+  let fitJsPath: string | null = null;
+  try { fitJsPath = require.resolve("@xterm/addon-fit"); } catch { /* not installed yet */ }
+
   // Harden the home dir (Windows ACL; POSIX already 0700) and bound the feed at
   // startup. Rotation also runs hourly so a long-lived overlay stays bounded.
   secureDir(home);
@@ -185,6 +195,42 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
           ...(claudeRoots.length ? [{ tool: "claude-code", roots: claudeRoots }] : []),
           ...(codexRoots.length ? [{ tool: "codex", roots: codexRoots }] : []),
         ]));
+        return;
+      }
+
+      // GET /api/terminal/status — is the native PTY backend available?
+      if (method === "GET" && url === "/api/terminal/status") {
+        sendJson(res, 200, { available: loadPtyBackend() !== null });
+        return;
+      }
+
+      // GET /vendor/xterm.js | /vendor/xterm.css — overlay terminal panel assets
+      if (method === "GET" && (url === "/vendor/xterm.js" || url === "/vendor/xterm.css")) {
+        if (!xtermPkgDir) { sendJson(res, 404, { error: "xterm assets unavailable" }); return; }
+        try {
+          const isCss = url.endsWith(".css");
+          const file = join(xtermPkgDir, isCss ? "css/xterm.css" : "lib/xterm.js");
+          const buf = fsReadFileSync(file);
+          res.writeHead(200, {
+            "Content-Type": isCss ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8",
+            "Content-Length": buf.length,
+            "Cache-Control": "public, max-age=86400",
+          });
+          res.end(buf);
+        } catch {
+          sendJson(res, 404, { error: "xterm assets unavailable" });
+        }
+        return;
+      }
+
+      // GET /vendor/addon-fit.js — xterm fit addon (UMD) for the terminal panel
+      if (method === "GET" && url === "/vendor/addon-fit.js") {
+        if (!fitJsPath) { sendJson(res, 404, { error: "xterm addon-fit unavailable" }); return; }
+        try {
+          const buf = fsReadFileSync(fitJsPath);
+          res.writeHead(200, { "Content-Type": "application/javascript; charset=utf-8", "Content-Length": buf.length, "Cache-Control": "public, max-age=86400" });
+          res.end(buf);
+        } catch { sendJson(res, 404, { error: "xterm addon-fit unavailable" }); }
         return;
       }
 
@@ -563,12 +609,23 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     }
   });
 
+  // Lumi Terminal: a spawned-shell PTY whose output feeds the capture pipeline.
+  // Display is unconditional; capture is gated by opt-in consent inside the orchestrator.
+  const stopTerminalWs = attachTerminalWebSocket(server, {
+    lumi,
+    cwd: () => process.cwd(),
+    getConsent: () => loadConsent(home),
+    onEvents: (events) => { for (const e of events) appendEvent(feedFile, e); },
+    onError: (e) => console.error("[lumi:terminal-ws]", e),
+  });
+
   // Stop both watchers when the server is closed so tests/processes don't
   // leak fs.watch handles or poll intervals.
   server.on("close", () => {
     clearInterval(rotateTimer);
     try { stopTerminalWatch(); } catch { /* already stopped */ }
     try { stopAiWatch(); } catch { /* already stopped */ }
+    try { stopTerminalWs(); } catch { /* already stopped */ }
   });
 
   return server;
