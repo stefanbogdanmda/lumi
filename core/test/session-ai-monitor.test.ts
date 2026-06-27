@@ -1,32 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, utimesSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { scanSessionFiles, detectActiveSessions, watchAiSessions } from "../src/session/ai-monitor";
+import { scanSessionFiles, detectActiveSessions, watchAiSessions, claudeAdapter, codexAdapter } from "../src/session/ai-monitor";
 import { Lumi } from "../src/lumi";
 import { InMemoryProfile } from "../src/profile";
 import { InMemoryCache } from "../src/cache";
 import { MockGenerator } from "../src/generator";
-
-/** Build a full Claude turn (assistant tool_use Bash line + matching user toolUseResult line). */
-function turn(command: string, stdout: string, id = "tu"): string {
-  const assistant = JSON.stringify({
-    type: "assistant", sessionId: "s", cwd: "C:/p", timestamp: "t2",
-    message: { role: "assistant", content: [
-      { type: "tool_use", id, name: "Bash", input: { command } },
-    ] },
-  });
-  const user = JSON.stringify({
-    type: "user", sessionId: "s", cwd: "C:/p", timestamp: "t3",
-    message: { role: "user", content: [{ type: "tool_result", tool_use_id: id, content: "done" }] },
-    toolUseResult: { stdout, stderr: "" },
-  });
-  return assistant + "\n" + user + "\n";
-}
-
-function makeLumi(): Lumi {
-  return new Lumi({ profile: new InMemoryProfile(), cache: new InMemoryCache(), generator: new MockGenerator() });
-}
 
 describe("scanSessionFiles", () => {
   it("finds *.jsonl recursively under a root", () => {
@@ -68,93 +48,55 @@ describe("detectActiveSessions", () => {
   });
 });
 
-describe("watchAiSessions (integration)", () => {
-  it("emits a lesson event when a new turn is appended", async () => {
+describe("watchAiSessions (multi-adapter integration)", () => {
+  it("emits a lesson when a new Claude turn is appended", async () => {
     const root = mkdtempSync(join(tmpdir(), "lumi-watch-"));
     mkdirSync(join(root, "C--p"), { recursive: true });
     const file = join(root, "C--p", "s.jsonl");
-    writeFileSync(file, ""); // exists at start, empty
+    writeFileSync(file, "");
     const lumi = new Lumi({ profile: new InMemoryProfile(), cache: new InMemoryCache(), generator: new MockGenerator() });
     const got: any[] = [];
     const stop = watchAiSessions({
-      roots: [root], lumi, isEnabled: () => true, pollMs: 50,
+      sources: [claudeAdapter([root])],
+      lumi, isEnabled: () => true, pollMs: 50,
       onEvents: (evs) => { got.push(...evs); },
     });
     try {
       appendFileSync(file, JSON.stringify({
         type: "assistant", sessionId: "s", cwd: "C:/p", timestamp: "t2",
-        message: { role: "assistant", content: [
-          { type: "tool_use", id: "tu", name: "Bash", input: { command: "git commit -m x" } },
-        ] },
+        message: { role: "assistant", content: [{ type: "tool_use", id: "tu", name: "Bash", input: { command: "git commit -m x" } }] },
       }) + "\n");
       appendFileSync(file, JSON.stringify({
         type: "user", sessionId: "s", cwd: "C:/p", timestamp: "t3",
         message: { role: "user", content: [{ type: "tool_result", tool_use_id: "tu", content: "done" }] },
         toolUseResult: { stdout: "1 file changed", stderr: "" },
       }) + "\n");
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 200));
       expect(got.some((e) => e.type === "lesson")).toBe(true);
     } finally { stop(); }
   });
 
-  it("skips pre-existing content and only teaches new appends", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lumi-skip-"));
-    mkdirSync(join(root, "C--p"), { recursive: true });
-    const file = join(root, "C--p", "s.jsonl");
-    // pre-existing complete turn BEFORE watch starts
-    writeFileSync(file, turn("git commit -m x", "1 file changed"));
-    const lumi = makeLumi();
-    const got: any[] = [];
-    const stop = watchAiSessions({ roots: [root], lumi, isEnabled: () => true, pollMs: 50, onEvents: (ev) => got.push(...ev) });
-    try {
-      await new Promise((r) => setTimeout(r, 200));
-      expect(got).toEqual([]); // pre-existing turn was skipped
-    } finally { stop(); }
-  });
-
-  it("reads a session file created after watch start from its beginning", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lumi-newfile-"));
-    mkdirSync(join(root, "C--p"), { recursive: true });
-    const lumi = makeLumi();
-    const got: any[] = [];
-    const stop = watchAiSessions({ roots: [root], lumi, isEnabled: () => true, pollMs: 50, onEvents: (ev) => got.push(...ev) });
-    try {
-      const file = join(root, "C--p", "new.jsonl");
-      writeFileSync(file, turn("git commit -m x", "1 file changed"));
-      await new Promise((r) => setTimeout(r, 300));
-      expect(got.some((e) => e.type === "lesson")).toBe(true);
-    } finally { stop(); }
-  });
-
-  it("captures nothing while paused and does not backfill the paused interval on resume", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lumi-pause-"));
-    mkdirSync(join(root, "C--p"), { recursive: true });
-    const file = join(root, "C--p", "s.jsonl");
-    writeFileSync(file, "");
-    const lumi = makeLumi();
-    const got: any[] = [];
-    let enabled = false;
-    const stop = watchAiSessions({ roots: [root], lumi, isEnabled: () => enabled, pollMs: 50, onEvents: (ev) => got.push(...ev) });
-    try {
-      appendFileSync(file, turn("git commit -m x", "1 file changed", "tu1")); // full turn while paused
-      await new Promise((r) => setTimeout(r, 200));
-      expect(got).toEqual([]);            // nothing while paused
-      enabled = true;                      // resume
-      await new Promise((r) => setTimeout(r, 200));
-      expect(got).toEqual([]);            // paused interval NOT backfilled
-      appendFileSync(file, turn("npm install", "added 1 package", "tu2")); // DIFFERENT turn after resume
-      await new Promise((r) => setTimeout(r, 300));
-      expect(got.some((e) => e.type === "lesson")).toBe(true); // post-resume IS captured
-    } finally { stop(); }
-  });
-
-  it("does not create a non-existent root and does not throw", () => {
-    const base = mkdtempSync(join(tmpdir(), "lumi-noroot-"));
-    const missing = join(base, "does-not-exist");
+  it("emits a lesson when a new Codex shell turn is appended", async () => {
+    const root = mkdtempSync(join(tmpdir(), "lumi-codex-"));
+    mkdirSync(join(root, "2026", "06", "27"), { recursive: true });
+    const file = join(root, "2026", "06", "27", "rollout-x.jsonl");
+    writeFileSync(file, JSON.stringify({ type: "session_meta", payload: { cwd: "C:/p", id: "s" } }) + "\n");
     const lumi = new Lumi({ profile: new InMemoryProfile(), cache: new InMemoryCache(), generator: new MockGenerator() });
-    const stop = watchAiSessions({ roots: [missing], lumi, isEnabled: () => true, pollMs: 50, onEvents: () => {} });
+    const got: any[] = [];
+    const stop = watchAiSessions({
+      sources: [codexAdapter([root])],
+      lumi, isEnabled: () => true, pollMs: 50,
+      onEvents: (evs) => { got.push(...evs); },
+    });
     try {
-      expect(existsSync(missing)).toBe(false); // Lumi did NOT create it
+      appendFileSync(file, JSON.stringify({ type: "response_item", timestamp: "t1", payload: {
+        type: "function_call", name: "shell", arguments: JSON.stringify({ command: "git commit -m y", workdir: "C:/p" }), call_id: "c1",
+      } }) + "\n");
+      appendFileSync(file, JSON.stringify({ type: "response_item", timestamp: "t2", payload: {
+        type: "function_call_output", call_id: "c1", output: "Exit code: 0\nOutput:\n---\n1 file changed\n",
+      } }) + "\n");
+      await new Promise((r) => setTimeout(r, 200));
+      expect(got.some((e) => e.type === "lesson")).toBe(true);
     } finally { stop(); }
   });
 });

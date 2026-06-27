@@ -1,7 +1,7 @@
 import * as http from "node:http";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { watchAiSessions } from "./session/ai-monitor";
+import { watchAiSessions, claudeAdapter, codexAdapter } from "./session/ai-monitor";
 import { isAiCaptureEnabled } from "./session/consent";
 import { loadConsent } from "./session/consent-config";
 import { writeFileSync } from "node:fs";
@@ -47,6 +47,8 @@ export interface OverlayServerDeps {
   entitlement?: LicenseResult;
   /** Override the AI-session roots watched (default ~/.claude/projects). Tests inject a temp dir. */
   claudeRoots?: string[];
+  /** Override the Codex roots watched (default ~/.codex/sessions). Tests inject a temp dir. */
+  codexRoots?: string[];
 }
 
 
@@ -124,12 +126,16 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     { pollMs, onError: (e) => console.error("[lumi:terminal-watch]", e) },
   );
 
-  // AI-session monitor: tail Claude Code transcripts and teach from the assistant's
-  // prose + commands + OUTPUT. Default OFF — only runs while consent is granted
-  // (checked live each drain, so toggling consent.json pauses capture at the source).
+  // AI-session monitor: tail Claude Code + Codex transcripts and teach from the
+  // assistant's prose + commands + OUTPUT. Default OFF — only runs while consent is
+  // granted (checked live each drain, so toggling consent.json pauses capture at source).
   const claudeRoots = deps.claudeRoots ?? [join(homedir(), ".claude", "projects")];
+  const codexRoots = deps.codexRoots ?? [join(homedir(), ".codex", "sessions")];
   const stopAiWatch = watchAiSessions({
-    roots: claudeRoots,
+    sources: [
+      ...(claudeRoots.length ? [claudeAdapter(claudeRoots)] : []),
+      ...(codexRoots.length ? [codexAdapter(codexRoots)] : []),
+    ],
     lumi,
     isEnabled: () => isAiCaptureEnabled(home),
     getConsent: () => loadConsent(home),
