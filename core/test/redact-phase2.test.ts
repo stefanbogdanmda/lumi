@@ -17,8 +17,10 @@ describe("redactSecrets — Phase 2 top-up", () => {
   });
 
   it("redacts a Luhn-valid card and preserves a non-Luhn 16-digit run", () => {
-    const out = redactSecrets("card 4242 4242 4242 4242 order 1234567812345670 x");
+    const orderNum = "1234567890123456"; // non-Luhn — must survive
+    const out = redactSecrets("card 4242 4242 4242 4242 order " + orderNum + " x");
     expect(out).not.toContain("4242 4242 4242 4242");
+    expect(out).toContain(orderNum);
     expect(out).toContain("x");
     expect(redactSecrets("id 1111111111111112")).toContain("1111111111111112");
   });
@@ -35,7 +37,9 @@ describe("redactSecrets — Phase 2 top-up", () => {
 
   it("redacts IPv4 and IPv6 addresses", () => {
     expect(redactSecrets("host 203.0.113.42 down")).not.toContain("203.0.113.42");
-    expect(redactSecrets("v6 2001:db8::8a2e:370:7334 up")).not.toContain("2001:db8::8a2e:370:7334");
+    const v6 = redactSecrets("v6 2001:db8::8a2e:370:7334 up");
+    expect(v6).not.toContain("2001:db8::8a2e:370:7334");
+    expect(v6).not.toContain("8a2e:370:7334");
   });
 
   it("does not over-redact ordinary version numbers or short digit runs", () => {

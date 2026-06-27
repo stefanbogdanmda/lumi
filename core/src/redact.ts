@@ -38,6 +38,8 @@ const RULES: Rule[] = [
 
   // Multi-line PGP private-key blocks. Their armor label ends in " BLOCK", which
   // the PEM/cert rule above does not cover. Same ReDoS tempering as that rule.
+  // BEGIN/END types are matched independently on purpose (keeps the pattern
+  // simple; a mismatched pair only ever over-redacts).
   {
     re: /-----BEGIN PGP (?:PRIVATE KEY|MESSAGE)[A-Z0-9 ]{0,20}-----(?:(?!-----(?:BEGIN|END))[\s\S]){0,8000}?-----END PGP (?:PRIVATE KEY|MESSAGE)[A-Z0-9 ]{0,20}-----/g,
     replace: PLACEHOLDER,
@@ -110,6 +112,8 @@ const RULES: Rule[] = [
   { re: /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g, replace: PLACEHOLDER },
 
   // PII — IPv6 (incl. :: compression). Requires at least one ':' run of hex groups.
+  // Known limitation: leading-`::` addresses (e.g. `::1`, `::ffff:…`) are not
+  // matched by design — acceptable under the over-redact-on-output bias.
   { re: /\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{0,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,7}:\b/g, replace: PLACEHOLDER },
 
   // Long high-entropy blobs (hex / base64, incl. '/'-bearing AWS secret keys).
