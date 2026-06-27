@@ -76,6 +76,19 @@ describe("captureStatus", () => {
     } finally { delete process.env.LUMI_NO_CAPTURE; }
   });
 
+  it("reports recording=false when all scopes are disabled", () => {
+    const home = homeWith({ enabled: true, scopes: { commands: false, output: false, aiText: false } });
+    const root = mkdtempSync(join(tmpdir(), "lumi-cs-root-"));
+    mkdirSync(join(root, "C--proj"), { recursive: true });
+    const file = join(root, "C--proj", "s.jsonl");
+    writeFileSync(file, "{}\n");
+    const now = 1_000_000_000_000;
+    utimesSync(file, new Date(now), new Date(now));
+    const s = captureStatus(home, [{ tool: "claude-code", roots: [root] }], () => now + 1000);
+    expect(s.recording).toBe(false);
+    expect(s.scopes).toEqual({ commands: false, output: false, aiText: false });
+  });
+
   it("picks the most-recently-active source across tools", () => {
     const home = homeWith({ enabled: true });
     const r1 = mkdtempSync(join(tmpdir(), "lumi-cs-a-"));

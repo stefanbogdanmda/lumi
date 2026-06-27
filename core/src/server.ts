@@ -212,8 +212,22 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
         return;
       }
 
-      // POST /api/delete-data — one-click purge of captured data
+      // POST /api/delete-data — one-click purge of captured data. Requires a JSON
+      // body { confirm: true } so a cross-origin form-POST (CSRF) can't wipe the
+      // feed: the JSON content-type forces a preflight this server never approves.
       if (method === "POST" && url === "/api/delete-data") {
+        try {
+          const raw = await readBody(req);
+          const parsed = JSON.parse(raw);
+          if (!parsed || parsed.confirm !== true) {
+            sendJson(res, 400, { error: "body must be { confirm: true }" });
+            return;
+          }
+        } catch (e) {
+          const status = (e as Error).message === "413" ? 413 : 400;
+          sendJson(res, status, { error: status === 413 ? "request entity too large" : "invalid JSON body" });
+          return;
+        }
         try {
           const removed = purgeData(home);
           sendJson(res, 200, { ok: true, removed });

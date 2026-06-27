@@ -40,6 +40,10 @@ export function captureStatus(
   if (consent.projects.mode === "allowlist") {
     return { recording: false, tool: null, project: null, scopes };
   }
+  // All scopes off → capture produces nothing even when enabled; don't claim recording.
+  if (!scopes.commands && !scopes.output && !scopes.aiText) {
+    return { recording: false, tool: null, project: null, scopes };
+  }
   let best: { tool: string; project: string; mtimeMs: number } | null = null;
   for (const src of sources) {
     // A tool explicitly set to false in the consent is skipped (missing key = allowed).
