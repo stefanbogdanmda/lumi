@@ -5,6 +5,7 @@ import type { OutputSignals } from "../types";
 import type { Lumi } from "../lumi";
 import type { SessionEvent } from "./types";
 import { isSensitiveCommand } from "./denylist";
+import { allowsTool, allowsProject, allowsScope, type ConsentConfig } from "./consent-config";
 
 // Captured output (build logs, stack traces) can be multi-MB. Cap each field and
 // the joined total before the synchronous redaction + concept-detection passes so
@@ -13,6 +14,28 @@ import { isSensitiveCommand } from "./denylist";
 const MAX_FIELD = 16_000;
 const MAX_TOTAL = 64_000;
 const clip = (s: string, n: number): string => (s.length > n ? s.slice(0, n) : s);
+
+/**
+ * Apply layered consent to a batch BEFORE redaction/detection:
+ *  - drop events whose tool or project is not allowed;
+ *  - null out fields whose scope is disabled (commands, output, ai-text);
+ *  - drop events left with nothing capturable.
+ * Pure; returns a new array (does not mutate inputs).
+ */
+export function applyConsent(events: SessionEvent[], consent: ConsentConfig): SessionEvent[] {
+  const out: SessionEvent[] = [];
+  for (const e of events) {
+    if (!allowsTool(consent, e.tool)) continue;
+    if (!allowsProject(consent, e.cwd)) continue;
+    const next: SessionEvent = { ...e };
+    if (!allowsScope(consent, "aiText")) delete next.text;
+    if (!allowsScope(consent, "commands")) delete next.command;
+    if (!allowsScope(consent, "output")) { delete next.stdout; delete next.stderr; }
+    if (!next.text && !next.command && !next.stdout && !next.stderr && !(next.files && next.files.length)) continue;
+    out.push(next);
+  }
+  return out;
+}
 
 /** Drop sensitive records, then clip + redact every text-bearing field before
  *  building detection signals. Exported so the size caps are testable directly. */
@@ -38,25 +61,34 @@ export function buildSessionSignals(events: SessionEvent[]): OutputSignals {
   };
 }
 
+export interface ProcessOptions {
+  /** Layered consent applied per event. Omit to capture everything (tests). */
+  consent?: ConsentConfig;
+}
+
 /**
  * Turn normalized SessionEvents into FeedEvents through the existing Lumi brain.
- * Order: drop sensitive command records → clip + redact ALL text/output → build
- * signals → detect new concepts → emit lesson events (and mark learned). Mirrors
- * processTerminalRecord so the consumer pipeline is unchanged.
+ * Order: consent filter → drop sensitive command records → clip + redact ALL
+ * text/output → build signals → detect new concepts → emit lesson events (and
+ * mark learned). Mirrors processTerminalRecord so the consumer pipeline is unchanged.
  */
 export async function processSessionEvents(
   events: SessionEvent[],
   lumi: Lumi,
   source: string,
+  opts: ProcessOptions = {},
 ): Promise<FeedEvent[]> {
   if (process.env.LUMI_NO_CAPTURE) return [];
 
+  const consented = opts.consent ? applyConsent(events, opts.consent) : events;
+  if (consented.length === 0) return [];
+
   // buildSessionSignals drops sensitive records, then clips + redacts every field.
-  const signals = buildSessionSignals(events);
+  const signals = buildSessionSignals(consented);
   if (!signals.text && !(signals.commands && signals.commands.length)) return [];
 
   const lessons = await lumi.processSignals(signals);
-  const ts = (events.length ? events[events.length - 1].ts : "") || new Date().toISOString();
+  const ts = (consented.length ? consented[consented.length - 1].ts : "") || new Date().toISOString();
   const out: FeedEvent[] = [];
   for (const l of lessons) {
     out.push({
