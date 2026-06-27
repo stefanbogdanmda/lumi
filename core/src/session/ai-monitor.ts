@@ -58,6 +58,8 @@ export interface AiMonitorOptions {
   onEvents: (events: FeedEvent[]) => void | Promise<void>;
   /** Live consent check, evaluated each drain so pausing stops capture at source. */
   isEnabled: () => boolean;
+  /** Live layered consent read each drain; passed per-event to the pipeline. */
+  getConsent?: () => import("./consent-config").ConsentConfig;
   pollMs?: number;
   onError?: (err: unknown) => void;
 }
@@ -115,7 +117,9 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
         const sessionEvents = extractClaudeEvents(lines, pending);
         if (sessionEvents.length === 0) continue;
         try {
-          const feed = await processSessionEvents(sessionEvents, opts.lumi, "claude-code");
+          const feed = await processSessionEvents(sessionEvents, opts.lumi, "claude-code", {
+            ...(opts.getConsent ? { consent: opts.getConsent() } : {}),
+          });
           if (feed.length) await opts.onEvents(feed);
         } catch (e) { opts.onError?.(e); }
       }

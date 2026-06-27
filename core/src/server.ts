@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import { watchAiSessions } from "./session/ai-monitor";
 import { isAiCaptureEnabled } from "./session/consent";
+import { loadConsent } from "./session/consent-config";
+import { writeFileSync } from "node:fs";
 import { JsonFileProfile } from "./profile";
 import { JsonFileCache } from "./cache";
 import { lumiHome } from "./paths";
@@ -118,6 +120,7 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     roots: claudeRoots,
     lumi,
     isEnabled: () => isAiCaptureEnabled(home),
+    getConsent: () => loadConsent(home),
     pollMs,
     onEvents: (events) => { for (const e of events) appendEvent(feedFile, e); },
     onError: (e) => console.error("[lumi:ai-watch]", e),
@@ -148,6 +151,36 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
         if (ent.email) payload.email = ent.email;
         if (ent.expires) payload.expires = ent.expires;
         sendJson(res, 200, payload);
+        return;
+      }
+
+      // GET /api/consent — current layered consent (defaults when no file)
+      if (method === "GET" && url === "/api/consent") {
+        sendJson(res, 200, loadConsent(home));
+        return;
+      }
+
+      // POST /api/consent — overwrite consent.json (human-readable)
+      if (method === "POST" && url === "/api/consent") {
+        let parsed: unknown;
+        try {
+          const raw = await readBody(req);
+          parsed = JSON.parse(raw);
+        } catch (e) {
+          const status = (e as Error).message === "413" ? 413 : 400;
+          sendJson(res, status, { error: status === 413 ? "request entity too large" : "invalid JSON body" });
+          return;
+        }
+        if (!parsed || typeof parsed !== "object") {
+          sendJson(res, 400, { error: "object body required" });
+          return;
+        }
+        try {
+          writeFileSync(join(home, "consent.json"), JSON.stringify(parsed, null, 2), { encoding: "utf8", mode: 0o600 });
+          sendJson(res, 200, loadConsent(home));
+        } catch {
+          sendJson(res, 500, { error: "could not save consent" });
+        }
         return;
       }
 
