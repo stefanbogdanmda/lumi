@@ -11,7 +11,11 @@ export class HookBridge {
   private watcher?: fs.FSWatcher;
   private intervalId?: ReturnType<typeof setInterval>;
 
-  constructor(private feedPath: string, private onLesson: (lesson: Lesson) => void) {}
+  constructor(
+    private feedPath: string,
+    private onLesson: (lesson: Lesson) => void,
+    private onStuck?: (advice: string) => void,
+  ) {}
 
   start(): void {
     fs.mkdirSync(path.dirname(this.feedPath), { recursive: true });
@@ -27,6 +31,10 @@ export class HookBridge {
     const result = readEventsSince(this.feedPath, this.offset);
     this.offset = result.offset;
     for (const event of result.events) {
+      if (event.type === "stuck" && event.stuck && this.onStuck) {
+        this.onStuck(event.stuck.advice);
+        continue;
+      }
       if (event.type !== "lesson") continue;
       if (this.seenIds.has(event.id)) continue;
       this.seenIds.add(event.id);
