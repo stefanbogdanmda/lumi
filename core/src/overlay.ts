@@ -14,7 +14,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'">
+        content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lumi Overlay</title>
   <style>
@@ -1078,6 +1078,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       }
     }
   </style>
+  <link rel="stylesheet" href="/vendor/xterm.css">
 </head>
 <body>
 
@@ -1089,6 +1090,7 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
     <span id="rec-dot" title="Lumi is not capturing" style="display:none;width:8px;height:8px;border-radius:50%;background:#e5484d;margin-left:8px;box-shadow:0 0 6px #e5484d;"></span>
     <span id="header-title">Lumi <span class="tagline">&#xB7; learn as you build</span></span>
     <span id="tier-pill" title="Your current plan">Free</span>
+    <button id="term-toggle-btn" type="button" title="Toggle terminal" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;font-size:11px;font-weight:600;padding:2px 8px;letter-spacing:0.04em;transition:color var(--transition),border-color var(--transition);">&#x2328; Term</button>
   </div>
 
   <!-- Body (hidden when collapsed) -->
@@ -1209,6 +1211,17 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
       </div>
 
     </div><!-- #tab-content -->
+
+    <!-- Terminal panel (collapsible, hidden by default) -->
+    <section id="term-panel" style="display:none;border-top:1px solid var(--border,#3a2f28);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;">
+        <strong>Lumi Terminal</strong>
+        <span id="term-rec" style="display:none;color:#e5484d;">&#x25CF; recording output</span>
+        <span id="term-unavail" style="display:none;opacity:.7;">native terminal module not installed</span>
+        <button id="term-close" type="button" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 6px;">&#xD7;</button>
+      </div>
+      <div id="term-mount" style="height:240px;background:#000;"></div>
+    </section>
 
     <!-- Footer -->
     <div id="widget-footer">
@@ -2560,6 +2573,52 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
         unstuckResult.style.display = '';
       });
   });
+
+  /* ── Terminal panel (lazy xterm.js load over /term WebSocket) ───────── */
+  var termInited = false;
+  function initTerminal() {
+    if (termInited) return; termInited = true;
+    fetch('/api/terminal/status').then(function (r) { return r.json(); }).then(function (st) {
+      if (!st || !st.available) { document.getElementById('term-unavail').style.display = ''; return; }
+      var s = document.createElement('script'); s.src = '/vendor/xterm.js';
+      s.onload = function () { openTerminal(); };
+      s.onerror = function () { document.getElementById('term-unavail').style.display = ''; };
+      document.head.appendChild(s);
+    }).catch(function () { document.getElementById('term-unavail').style.display = ''; });
+  }
+  function openTerminal() {
+    var TermCtor = window.Terminal; if (!TermCtor) { document.getElementById('term-unavail').style.display = ''; return; }
+    var term = new TermCtor({ convertEol: true, fontSize: 12, theme: { background: '#000' } });
+    term.open(document.getElementById('term-mount'));
+    var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    var ws = new WebSocket(proto + '://' + location.host + '/term');
+    ws.onmessage = function (ev) {
+      var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.type === 'output') term.write(m.data);
+      else if (m.type === 'exit') term.write('\r\n[lumi] shell exited (' + m.exitCode + ')\r\n');
+      else if (m.type === 'unavailable') { document.getElementById('term-unavail').style.display = ''; }
+    };
+    ws.onopen = function () { document.getElementById('term-rec').style.display = ''; };
+    ws.onclose = function () { document.getElementById('term-rec').style.display = 'none'; };
+    term.onData(function (d) { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'input', data: d })); });
+    term.onResize(function (sz) { if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'resize', cols: sz.cols, rows: sz.rows })); });
+  }
+
+  var termToggleBtn = document.getElementById('term-toggle-btn');
+  var termPanel     = document.getElementById('term-panel');
+  var termCloseBtn  = document.getElementById('term-close');
+
+  if (termToggleBtn) {
+    termToggleBtn.addEventListener('click', function () {
+      if (termPanel) termPanel.style.display = '';
+      initTerminal();
+    });
+  }
+  if (termCloseBtn) {
+    termCloseBtn.addEventListener('click', function () {
+      if (termPanel) termPanel.style.display = 'none';
+    });
+  }
 
 })();
 </script>
