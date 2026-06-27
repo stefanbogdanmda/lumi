@@ -71,3 +71,11 @@ export { verifyLicense, JsonFileLicenseStore, currentEntitlement } from "./licen
 export type { LicenseResult, CurrentEntitlementOpts } from "./license";
 export { PRO_FEATURES, isPro, requiresPro, allowed, upgradeMessage } from "./entitlements";
 export type { Feature } from "./entitlements";
+export { loadPtyBackend, FakePtyBackend } from "./terminal/pty-backend";
+export type { PtyBackend, PtySession, PtySpawnOptions } from "./terminal/pty-backend";
+export { startLumiTerminal } from "./terminal/lumi-terminal";
+export type { LumiTerminalOptions, LumiTerminalSession } from "./terminal/lumi-terminal";
+export { attachTerminalWebSocket } from "./terminal/ws";
+export type { TerminalWsDeps } from "./terminal/ws";
+export { createCleanTextSink } from "./terminal/clean-text";
+export type { CleanTextSink } from "./terminal/clean-text";
