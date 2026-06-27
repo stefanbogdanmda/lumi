@@ -11,7 +11,7 @@ export interface CaptureStatus {
   recording: boolean;
   tool: string | null;
   project: string | null;
-  scopes: { commands: boolean; output: boolean; aiText: boolean };
+  scopes: Readonly<{ commands: boolean; output: boolean; aiText: boolean }>;
 }
 
 /** A session is "active" if its file mtime advanced within this window. */
@@ -31,6 +31,13 @@ export function captureStatus(
   const consent = loadConsent(home);
   const scopes = consent.scopes;
   if (!consent.enabled || process.env.LUMI_NO_CAPTURE) {
+    return { recording: false, tool: null, project: null, scopes };
+  }
+  // Per-project allowlist can't be verified from a session file's encoded slug
+  // alone, so in allowlist mode we can't confirm THIS project is allowed. Fail
+  // the indicator closed (show not-recording) rather than risk a green dot for an
+  // excluded project. (Refine later by decoding the session's real cwd.)
+  if (consent.projects.mode === "allowlist") {
     return { recording: false, tool: null, project: null, scopes };
   }
   let best: { tool: string; project: string; mtimeMs: number } | null = null;

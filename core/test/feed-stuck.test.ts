@@ -11,4 +11,9 @@ describe("stuckEvent", () => {
     expect(e.v).toBe(1);
     expect(typeof e.id).toBe("string");
   });
+
+  it("omits repeatedError when not provided", () => {
+    const e = stuckEvent({ source: "codex", advice: "x" });
+    expect(e.stuck && "repeatedError" in e.stuck).toBe(false);
+  });
 });
