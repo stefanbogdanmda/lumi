@@ -112,14 +112,16 @@ export async function processSessionEvents(
     lumi.markLearned(l.conceptId);
   }
 
-  // Live fix-loop coaching: if the redacted text shows a stuck loop, surface ONE
-  // proactive card. Deduped across batches via the caller's stuckSeen set so a
-  // persistent loop doesn't spam the feed.
-  const stuck = detectStuck(signals.text ?? "");
+  // Live fix-loop coaching: surface ONE proactive card per concrete repeated-error
+  // signature (the canonical AI fix-loop). Dedupe only on repeatedError identity —
+  // frustration-phrase-only signals carry no stable identity, so we never suppress
+  // them against a generic label (which would hide a *different* later problem).
+  const stuck = detectStuck(signals.text);
   if (stuck.stuck) {
-    const key = stuck.repeatedError ?? stuck.reasons[0] ?? "stuck";
-    if (!opts.stuckSeen || !opts.stuckSeen.has(key)) {
-      opts.stuckSeen?.add(key);
+    const key = stuck.repeatedError;
+    const alreadySeen = key !== undefined && (opts.stuckSeen?.has(key) ?? false);
+    if (!alreadySeen) {
+      if (key !== undefined) opts.stuckSeen?.add(key);
       out.push({
         ...stuckEvent({
           source,

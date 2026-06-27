@@ -105,8 +105,8 @@ export interface AiMonitorOptions {
 export function watchAiSessions(opts: AiMonitorOptions): () => void {
   const pollMs = opts.pollMs ?? 1000;
   // These grow monotonically: one entry per unique session-file path ever seen
-  // (bounded for a local tool). offsets/states/fileTool are kept in sync — if file
-  // eviction is ever added, drop a path from all three together.
+  // (bounded for a local tool). offsets/states/fileTool/stuckSeen are kept in sync —
+  // if file eviction is ever added, drop a path from all four together.
   const offsets = new Map<string, number>();
   const states = new Map<string, unknown>();        // file → adapter state
   const fileTool = new Map<string, SessionAdapter>(); // file → owning adapter

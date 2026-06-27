@@ -31,6 +31,16 @@ describe("processSessionEvents — fix-loop card", () => {
     expect(second.some((e) => e.type === "stuck")).toBe(false);
   });
 
+  it("emits a stuck card for a different error signature even when one is already in seen-set", async () => {
+    const seen = new Set<string>();
+    const error1 = "TypeError: cannot read x\nlet me try again\nTypeError: cannot read x\nstill failing\nlet me try again";
+    const error2 = "ReferenceError: y is not defined\nlet me try again\nReferenceError: y is not defined\nstill failing\nlet me try again";
+    const base = { tool: "claude-code", sessionId: "s", cwd: "C:/p", ts: "t", role: "assistant" } as const;
+    await processSessionEvents([{ ...base, text: error1 }], newLumi(), "claude-code", { stuckSeen: seen });
+    const feed = await processSessionEvents([{ ...base, text: error2 }], newLumi(), "claude-code", { stuckSeen: seen });
+    expect(feed.some((e) => e.type === "stuck")).toBe(true);
+  });
+
   it("emits no stuck event for ordinary text", async () => {
     const feed = await processSessionEvents(
       [{ tool: "claude-code", sessionId: "s", cwd: "C:/p", ts: "t", role: "assistant", text: "All tests pass." }],
