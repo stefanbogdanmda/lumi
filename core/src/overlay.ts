@@ -1619,20 +1619,35 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
   function buildStuckCard(stuck, id) {
     var card = document.createElement('div');
     card.className = 'card failure-card';
-    if (id) card.setAttribute('data-lesson-id', id);
+    if (id) card.dataset.lessonId = id;
+
     var head = document.createElement('div');
     head.className = 'failure-head';
     var badge = document.createElement('span');
     badge.className = 'failure-badge';
     badge.textContent = '⚠ You may be stuck in a fix-loop';
     head.appendChild(badge);
+    var dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.className = 'failure-dismiss';
+    dismiss.setAttribute('aria-label', 'Dismiss');
+    dismiss.textContent = '✕';
+    head.appendChild(dismiss);
     card.appendChild(head);
+
     var body = document.createElement('div');
     body.className = 'failure-body';
     var p = document.createElement('p');
     p.textContent = stuck.advice || '';
     body.appendChild(p);
     card.appendChild(body);
+
+    dismiss.addEventListener('click', function () {
+      markLessonDismissed(id);
+      if (card.parentNode) card.parentNode.removeChild(card);
+      if (lessonsList.children.length === 0) lessonsEmpty.style.display = '';
+    });
+
     return card;
   }
 
