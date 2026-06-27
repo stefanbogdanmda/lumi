@@ -45,6 +45,30 @@ describe("rotateFeed", () => {
     expect(() => rotateFeed(join(tmpdir(), "nope-lumi.jsonl"), { maxAgeDays: 1, maxBytes: 1, now: () => 0 }))
       .not.toThrow();
   });
+
+  it("drops malformed JSON lines without throwing", () => {
+    const now = 10 * DAY;
+    const dir = mkdtempSync(join(tmpdir(), "lumi-ret-"));
+    const file = join(dir, "feed.jsonl");
+    writeFileSync(file, [
+      JSON.stringify({ id: "good", ts: new Date(now - DAY).toISOString(), type: "lesson" }),
+      "not-json-at-all",
+      JSON.stringify({ id: "also-good", ts: new Date(now - DAY).toISOString(), type: "lesson" }),
+    ].join("\n") + "\n");
+    rotateFeed(file, { maxAgeDays: 3, maxBytes: 50_000_000, now: () => now });
+    const kept = readFileSync(file, "utf8").trim().split("\n").map((l) => JSON.parse(l));
+    expect(kept.map((e) => e.id)).toEqual(["good", "also-good"]);
+  });
+
+  it("writes an empty file when all events are older than maxAgeDays", () => {
+    const now = 10 * DAY;
+    const file = feedWith([
+      { id: "a", ts: new Date(now - 10 * DAY).toISOString(), type: "lesson" },
+      { id: "b", ts: new Date(now - 8 * DAY).toISOString(), type: "lesson" },
+    ]);
+    rotateFeed(file, { maxAgeDays: 3, maxBytes: 50_000_000, now: () => now });
+    expect(readFileSync(file, "utf8")).toBe("");
+  });
 });
 
 describe("purgeData", () => {

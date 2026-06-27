@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 export interface RotateOptions {
@@ -43,25 +43,29 @@ export function rotateFeed(file: string, opts: RotateOptions): void {
   }
 
   // Size cap: drop oldest first (rows are in file order = chronological append).
-  // O(n^2) is acceptable here because feed.jsonl is a bounded local file
-  // (the size cap itself prevents unbounded growth between rotation calls).
   const bytesOf = (rs: Row[]): number =>
     Buffer.byteLength(
       rs.map((r) => r.line).join("\n") + (rs.length ? "\n" : ""),
       "utf8",
     );
 
+  // Track a running byte total (one full serialization up front) instead of
+  // re-serializing each iteration — the file can transiently reach tens of MB
+  // between rotations, so O(n^2) would hang.
+  let totalBytes = bytesOf(rows);
   let start = 0;
-  while (start < rows.length && bytesOf(rows.slice(start)) > opts.maxBytes) {
+  while (start < rows.length && totalBytes > opts.maxBytes) {
+    totalBytes -= Buffer.byteLength(rows[start].line, "utf8") + 1; // line bytes + its \n
     start++;
   }
   const kept = rows.slice(start);
 
-  writeFileSync(
-    file,
-    kept.map((r) => r.line).join("\n") + (kept.length ? "\n" : ""),
-    { encoding: "utf8", mode: 0o600 },
-  );
+  // Atomic rewrite: write to a temp file then rename, so a mid-write kill
+  // can't corrupt/truncate the feed.
+  const content = kept.map((r) => r.line).join("\n") + (kept.length ? "\n" : "");
+  const tmp = file + ".tmp";
+  writeFileSync(tmp, content, { encoding: "utf8", mode: 0o600 });
+  renameSync(tmp, file); // atomic on POSIX, near-atomic on Windows
 }
 
 /** Delete captured data under `home`. Returns the paths actually removed. */
