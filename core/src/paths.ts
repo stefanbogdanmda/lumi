@@ -10,3 +10,4 @@ export function profilePath(): string { return join(lumiHome(), "profile.json");
 export function cachePath(): string { return join(lumiHome(), "cache.json"); }
 export function feedPath(): string { return join(lumiHome(), "feed.jsonl"); }
 export function terminalFile(): string { return join(lumiHome(), "terminal.jsonl"); }
+export function consentPath(): string { return join(lumiHome(), "consent.json"); }

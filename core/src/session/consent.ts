@@ -1,16 +1,9 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { loadConsent } from "./consent-config";
 
-/** Minimal Phase-1 consent gate. The full per-tool/per-project/per-scope model
- *  and its UI land in Phase 2; here we only gate AI-session capture as a whole,
- *  default OFF, with the global LUMI_NO_CAPTURE kill switch always winning. */
+/** Global AI-capture gate used by the watcher to decide whether to do ANY work.
+ *  Per-tool / per-project / per-scope filtering happens per event in process.ts.
+ *  LUMI_NO_CAPTURE is the always-winning kill switch. Default OFF. */
 export function isAiCaptureEnabled(home: string): boolean {
   if (process.env.LUMI_NO_CAPTURE) return false;
-  try {
-    const raw = readFileSync(join(home, "consent.json"), "utf8");
-    const c = JSON.parse(raw);
-    return c?.aiSessions === true;
-  } catch {
-    return false; // no file / unreadable / malformed → not consented
-  }
+  return loadConsent(home).enabled;
 }
