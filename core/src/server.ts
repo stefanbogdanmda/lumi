@@ -30,6 +30,8 @@ import { detectStuck, unstuckAdvice } from "./unstuck";
 import { currentEntitlement, verifyLicense, JsonFileLicenseStore } from "./license";
 import { isPro } from "./entitlements";
 import type { LicenseResult } from "./license";
+import { rotateFeed, purgeData } from "./retention";
+import { secureDir } from "./acl";
 
 export interface OverlayServerDeps {
   home?: string;
@@ -58,6 +60,8 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown): void
 }
 
 const MAX_BODY_BYTES = 65536;
+const RETENTION_DAYS = 30;
+const RETENTION_BYTES = 50 * 1024 * 1024;
 
 /** Resolves with the body string, or rejects with "413" if over MAX_BODY_BYTES. */
 function readBody(req: http.IncomingMessage): Promise<string> {
@@ -90,6 +94,14 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   const home = deps.home ?? lumiHome();
   const pollMs = deps.pollMs ?? 1000;
   const feedFile = join(home, "feed.jsonl");
+
+  // Harden the home dir (Windows ACL; POSIX already 0700) and bound the feed at
+  // startup. Rotation also runs hourly so a long-lived overlay stays bounded.
+  secureDir(home);
+  const rotate = () => { try { rotateFeed(feedFile, { maxAgeDays: RETENTION_DAYS, maxBytes: RETENTION_BYTES }); } catch { /* best-effort */ } };
+  rotate();
+  const rotateTimer = setInterval(rotate, 60 * 60 * 1000);
+  if (typeof rotateTimer.unref === "function") rotateTimer.unref();
 
   const generator =
     deps.generator ??
@@ -180,6 +192,17 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
           sendJson(res, 200, loadConsent(home));
         } catch {
           sendJson(res, 500, { error: "could not save consent" });
+        }
+        return;
+      }
+
+      // POST /api/delete-data — one-click purge of captured data
+      if (method === "POST" && url === "/api/delete-data") {
+        try {
+          const removed = purgeData(home);
+          sendJson(res, 200, { ok: true, removed });
+        } catch {
+          sendJson(res, 500, { error: "could not delete data" });
         }
         return;
       }
@@ -513,6 +536,7 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   // Stop both watchers when the server is closed so tests/processes don't
   // leak fs.watch handles or poll intervals.
   server.on("close", () => {
+    clearInterval(rotateTimer);
     try { stopTerminalWatch(); } catch { /* already stopped */ }
     try { stopAiWatch(); } catch { /* already stopped */ }
   });
