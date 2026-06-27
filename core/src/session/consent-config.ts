@@ -35,16 +35,17 @@ export function loadConsent(home: string): ConsentConfig {
   try {
     raw = JSON.parse(readFileSync(join(home, "consent.json"), "utf8"));
   } catch {
-    return { ...DEFAULT, tools: {}, projects: { ...DEFAULT.projects }, scopes: { ...DEFAULT.scopes } };
+    return { ...DEFAULT, projects: { ...DEFAULT.projects }, scopes: { ...DEFAULT.scopes } };
   }
   // Parsed JSON is untrusted external input; we must cast to inspect fields.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const c = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
   const enabled = typeof c.enabled === "boolean" ? c.enabled : c.aiSessions === true;
-  const tools =
-    c.tools && typeof c.tools === "object" && !Array.isArray(c.tools)
-      ? (c.tools as Record<string, boolean>)
-      : {};
+  // Keep only boolean-valued entries so the typed Record<string, boolean> stays truthful.
+  const tools: Record<string, boolean> = {};
+  if (c.tools && typeof c.tools === "object" && !Array.isArray(c.tools)) {
+    for (const [k, v] of Object.entries(c.tools)) if (typeof v === "boolean") tools[k] = v;
+  }
   const projects =
     c.projects && (c.projects.mode === "allowlist" || c.projects.mode === "all")
       ? {
@@ -75,8 +76,8 @@ export function allowsProject(c: ConsentConfig, cwd: string): boolean {
   if (!cwd) return false;
   const n = norm(cwd);
   return c.projects.allow.some((root) => {
-    const r = norm(root);
-    return n === r || n.startsWith(r.endsWith("/") ? r : r + "/");
+    const r = norm(root).replace(/\/$/, "");
+    return n === r || n.startsWith(r + "/");
   });
 }
 

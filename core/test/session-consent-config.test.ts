@@ -37,6 +37,16 @@ describe("loadConsent", () => {
     expect(c.scopes).toEqual({ commands: true, output: true, aiText: false });
     expect(c.projects).toEqual({ mode: "allowlist", allow: ["C:/work"] });
   });
+
+  it("handles malformed shapes without crashing, returning safe defaults", () => {
+    expect(loadConsent(home({ scopes: "yes" } as object)).scopes).toEqual({ commands: true, output: true, aiText: true });
+    expect(loadConsent(home({ tools: [] } as object)).tools).toEqual({});
+    expect(loadConsent(home({ projects: { mode: "bogus" } } as object)).projects.mode).toBe("all");
+    expect(loadConsent(home({ tools: { codex: "yes" } } as object)).tools).toEqual({}); // non-boolean dropped
+    const dir = mkdtempSync(join(tmpdir(), "lumi-consent2-"));
+    writeFileSync(join(dir, "consent.json"), "not json at all");
+    expect(loadConsent(dir).enabled).toBe(false);
+  });
 });
 
 describe("consent predicates", () => {
@@ -56,7 +66,9 @@ describe("consent predicates", () => {
     expect(allowsProject(base, "C:/work/app")).toBe(true);
     expect(allowsProject(base, "C:\\proj\\sub")).toBe(true);
     expect(allowsProject(base, "C:/other")).toBe(false);
+    expect(allowsProject(base, "C:/work-other")).toBe(false); // must not match C:/work
     expect(allowsProject({ ...base, projects: { mode: "all", allow: [] } }, "C:/anywhere")).toBe(true);
+    expect(allowsProject({ ...base, projects: { mode: "allowlist", allow: ["C:/work/"] } }, "C:/work")).toBe(true);
   });
 
   it("allowsScope: explicit false blocks that scope", () => {
