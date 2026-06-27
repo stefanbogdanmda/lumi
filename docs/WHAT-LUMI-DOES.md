@@ -75,7 +75,7 @@ Lumi's brain is **tool-agnostic**.
   and turns on only after you opt in. Secrets are dropped or redacted before anything
   is saved, and capture is confined to the AI tool's own session files: Lumi does not
   read other terminals' raw output or scrape your screen. (Raw output from terminals
-  you run yourself is a separate, opt-in "Lumi Terminal" feature, coming later.)
+  you run yourself is captured by the separate, opt-in Lumi Terminal — see below.)
 - **Codex sessions:** the same passive, opt-in capture now also reads OpenAI Codex
   session files (`~/.codex/sessions/**`), with identical denylist + redaction.
 - **Lumi Terminal (your own shell):** Lumi can host a terminal where it owns the
