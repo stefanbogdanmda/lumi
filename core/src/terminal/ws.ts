@@ -69,8 +69,10 @@ export function attachTerminalWebSocket(server: Server, deps: TerminalWsDeps): (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let msg: any;
       try { msg = JSON.parse(raw.toString()); } catch { return; }
-      if (msg?.type === "input" && typeof msg.data === "string") term.write(msg.data);
-      else if (msg?.type === "resize" && typeof msg.cols === "number" && typeof msg.rows === "number") term.resize(msg.cols, msg.rows);
+      try {
+        if (msg?.type === "input" && typeof msg.data === "string") term.write(msg.data);
+        else if (msg?.type === "resize" && typeof msg.cols === "number" && typeof msg.rows === "number") term.resize(msg.cols, msg.rows);
+      } catch (e) { deps.onError?.(e); }
     });
     const cleanup = () => { try { term.stop(); } catch {} dec(); };
     ws.on("close", cleanup);

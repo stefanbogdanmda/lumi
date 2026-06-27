@@ -25,6 +25,8 @@ function listen(s: http.Server): Promise<number> {
   return new Promise((r) => s.listen(0, () => r((s.address() as any).port)));
 }
 
+const tick = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 describe("attachTerminalWebSocket", () => {
   it("relays client input to the PTY and PTY output back to the client", async () => {
     const backend = new FakePtyBackend();
@@ -86,5 +88,57 @@ describe("attachTerminalWebSocket", () => {
       setTimeout(resolve, 200);
     });
     expect(got.some((m) => m.type === "unavailable")).toBe(true);
+  });
+
+  it("ignores malformed JSON without closing the socket", async () => {
+    const backend = new FakePtyBackend();
+    server = http.createServer((_req, res) => res.end("ok"));
+    stop = attachTerminalWebSocket(server, { lumi: newLumi(), cwd: () => "C:/p", getConsent: cfg, onEvents: () => {}, backend });
+    const port = await listen(server);
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/term`);
+    let closed = false;
+    await new Promise<void>((resolve) => {
+      ws.on("close", () => { closed = true; });
+      ws.on("open", () => { ws.send("not json{"); setTimeout(resolve, 80); });
+    });
+    expect(closed).toBe(false);
+    expect(backend.sessions[0].written).toEqual([]);
+    ws.close();
+  });
+
+  it("rejects a connection over maxSessions with exit -1 and spawns only the cap", async () => {
+    const backend = new FakePtyBackend();
+    server = http.createServer((_req, res) => res.end("ok"));
+    stop = attachTerminalWebSocket(server, { lumi: newLumi(), cwd: () => "C:/p", getConsent: cfg, onEvents: () => {}, backend, maxSessions: 1 });
+    const port = await listen(server);
+    const first = new WebSocket(`ws://127.0.0.1:${port}/term`);
+    await new Promise<void>((r) => first.on("open", () => r()));
+    await tick(30); // let the server connection handler run (active++)
+    const second = new WebSocket(`ws://127.0.0.1:${port}/term`);
+    const got: any[] = [];
+    await new Promise<void>((resolve) => {
+      second.on("message", (m) => got.push(JSON.parse(m.toString())));
+      second.on("close", () => resolve());
+      setTimeout(resolve, 200);
+    });
+    expect(got.some((m) => m.type === "exit" && m.exitCode === -1)).toBe(true);
+    expect(backend.sessions).toHaveLength(1);
+    first.close();
+  });
+
+  it("does not handle non-/term upgrades", async () => {
+    const backend = new FakePtyBackend();
+    server = http.createServer((_req, res) => res.end("ok"));
+    stop = attachTerminalWebSocket(server, { lumi: newLumi(), cwd: () => "C:/p", getConsent: cfg, onEvents: () => {}, backend });
+    const port = await listen(server);
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/other`);
+    await new Promise<void>((resolve) => {
+      ws.on("open", () => resolve());
+      ws.on("error", () => resolve());
+      ws.on("close", () => resolve());
+      setTimeout(resolve, 200);
+    });
+    expect(backend.sessions).toHaveLength(0);
+    try { ws.close(); } catch {}
   });
 });
