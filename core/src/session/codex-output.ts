@@ -15,10 +15,15 @@ export function parseCodexExecOutput(output: string): CodexExecResult {
   const exitMatch = output.match(/^Exit code:\s*(-?\d+)/m);
   const exitCode = exitMatch ? Number(exitMatch[1]) : undefined;
   const sep = output.indexOf("Output:");
-  if (sep === -1) return { stdout: output, ...(exitCode !== undefined ? { exitCode } : {}) };
-  // Body starts after the "---" fence following "Output:".
+  // Real Codex output always has an "Exit code:" header AND an "Output:" section.
+  // Missing either → treat the whole string as stdout (don't silently drop it).
+  if (exitCode === undefined || sep === -1) {
+    return { stdout: output, ...(exitCode !== undefined ? { exitCode } : {}) };
+  }
+  // Body starts after the "---" fence following "Output:". Anchor the fence to a
+  // line boundary so a "---" in body text on the "Output:" line isn't mistaken for it.
   const afterOutput = output.slice(sep);
-  const fence = afterOutput.indexOf("---");
-  const body = fence === -1 ? "" : afterOutput.slice(fence + 3).replace(/^\r?\n/, "");
+  const fence = afterOutput.indexOf("\n---");
+  const body = fence === -1 ? "" : afterOutput.slice(fence + 4).replace(/^\r?\n/, "");
   return { stdout: body, ...(exitCode !== undefined ? { exitCode } : {}) };
 }

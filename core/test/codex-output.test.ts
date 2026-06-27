@@ -21,4 +21,26 @@ describe("parseCodexExecOutput", () => {
     expect(r.exitCode).toBeUndefined();
     expect(r.stdout).toBe("just some text without markers");
   });
+
+  it("falls back when string contains Output: but no Exit code header", () => {
+    const r = parseCodexExecOutput("Error: Output: was null\nStack: ...");
+    expect(r.exitCode).toBeUndefined();
+    expect(r.stdout).toBe("Error: Output: was null\nStack: ...");
+  });
+
+  it("preserves --- lines inside the body", () => {
+    const r = parseCodexExecOutput("Exit code: 0\nWall time: 1s\nOutput:\n---\nfirst\n---\nsecond\n");
+    expect(r.stdout).toContain("second");
+    expect(r.stdout).toContain("---");
+  });
+
+  it("returns empty stdout when Output: has no fence (truncated)", () => {
+    const r = parseCodexExecOutput("Exit code: 0\nWall time: 0.5s\nOutput:\n");
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toBe("");
+  });
+
+  it("returns empty stdout for non-string input", () => {
+    expect(parseCodexExecOutput(null as unknown as string)).toEqual({ stdout: "" });
+  });
 });
