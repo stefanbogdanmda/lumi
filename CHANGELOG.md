@@ -7,6 +7,13 @@ All notable changes to Lumi are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Lumi Terminal — a real terminal inside the web overlay.** A new `Terminal` tab embeds an
+  xterm.js terminal served over a localhost-only `/term` WebSocket, with an optional native
+  `node-pty` backend (gracefully degrades when the prebuilt binary is unavailable). Capture of
+  terminal output is **consent-gated and default-OFF**; when enabled, output flows through the
+  same redaction pipeline as the rest of Lumi before any lesson is generated. The WebSocket
+  handshake enforces a same-origin (localhost) policy, caps inbound frame size, and clamps
+  resize geometry, so a stray browser tab can't open a shell on your machine.
 - **Security lens in the VS Code panel's Paste tab.** Completing parity across all three
   surfaces (CLI, web overlay, VS Code), pasting AI-generated code into the extension now
   runs the security lens and renders flagged risks (clean advice, theme-aware severity

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/stefanbogdanmda/lumi/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanbogdanmda/lumi/actions/workflows/ci.yml)
 [![License: Elastic 2.0](https://img.shields.io/badge/License-Elastic%202.0-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-1137%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-1452%20passing-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
 
 **Build with AI, and actually understand what you shipped.** Lumi is a friendly mini-teacher
@@ -83,7 +83,10 @@ One shared lesson feed keeps every surface in sync:
 - **Inline** — a "🪄 Lumi — quick lesson" appended right inside the AI's reply. Works in the
   terminal, on desktop, and on the **mobile app** via the Claude Code plugin.
 - **Web overlay** (`lumi serve`) — a tool-agnostic browser window you pin on top of your work,
-  with tabs for **Lessons · Glossary · Review · Explain · Coach · Prompt · Paste · Paths · Digest**.
+  with tabs for **Lessons · Glossary · Review · Explain · Coach · Prompt · Paste · Paths · Digest · Terminal**.
+  The **Terminal** tab is a real, embedded terminal (xterm.js over a localhost-only WebSocket) —
+  capture of its output is consent-gated and default-OFF, and runs through Lumi's redaction
+  pipeline when you opt in.
 - **VS Code side-panel** — lesson cards with **"Makes sense ✅ / Still fuzzy 🤔"** buttons, plus
   Glossary, Review, and Explain.
 - **CLI** — the full `lumi` command set (below).

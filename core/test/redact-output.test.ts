@@ -31,7 +31,7 @@ describe("redactSecrets — free-form output hardening", () => {
   });
 
   it("preserves ordinary slash-bearing file paths", () => {
-    const out = redactSecrets("wrote C:/Users/stefa/projects/Lumi/core/src/server.ts");
+    const out = redactSecrets("wrote C:/Users/devuser/projects/lumi/core/src/server.ts");
     expect(out).toContain("server.ts");
     expect(out).not.toContain(R);
   });
