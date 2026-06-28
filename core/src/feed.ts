@@ -18,12 +18,14 @@ export interface FeedEvent {
   ts: string;
   source: string;
   session?: string;
-  type: "lesson" | "review_due" | "progress" | "glossary_update" | "tool_action" | "terminal";
+  type: "lesson" | "review_due" | "progress" | "glossary_update" | "tool_action" | "terminal" | "stuck";
   concept?: string;
   level?: LearnerLevel;
   lesson?: FeedLesson;
   /** Failure context for a plain terminal command (carries the "⚠ command failed" nudge to the overlay). */
   command?: { line: string; exitCode?: number | null; failed: boolean; cwd?: string };
+  /** Fix-loop coaching payload (carries the proactive "you may be stuck" card). */
+  stuck?: { advice: string; repeatedError?: string };
 }
 
 export interface LessonEventInput {
@@ -48,6 +50,26 @@ export function lessonEvent(input: LessonEventInput): FeedEvent {
     concept: input.concept,
     level: input.level,
     lesson: input.lesson,
+  };
+}
+
+export interface StuckEventInput {
+  source: string;
+  advice: string;
+  repeatedError?: string;
+  id?: string;
+  ts?: string;
+}
+
+/** Construct a versioned fix-loop coaching event (auto id + ts if omitted). */
+export function stuckEvent(input: StuckEventInput): FeedEvent {
+  return {
+    v: 1,
+    id: input.id ?? `evt_${randomUUID()}`,
+    ts: input.ts ?? new Date().toISOString(),
+    source: input.source,
+    type: "stuck",
+    stuck: { advice: input.advice, ...(input.repeatedError ? { repeatedError: input.repeatedError } : {}) },
   };
 }
 

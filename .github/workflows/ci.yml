@@ -13,6 +13,10 @@ jobs:
           node-version: "20"
       - name: Install
         run: npm install
+      - name: Terminal backend availability (non-fatal)
+        continue-on-error: true
+        run: |
+          node -e "try { require('node-pty'); console.log('node-pty available'); } catch (e) { console.log('node-pty unavailable (optional) -', e.message); }"
       - name: Test core
         run: npm test --workspace core
       - name: Build core

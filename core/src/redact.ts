@@ -18,6 +18,33 @@ interface Rule {
 
 // NOTE: every `re` MUST be global (`g`) so String.replace swaps all matches.
 const RULES: Rule[] = [
+  // Multi-line private-key / certificate blocks: collapse the whole armored body.
+  // ReDoS-hardened three ways against attacker-influenceable stdout:
+  //   1. label classes are bounded ({0,40});
+  //   2. the body is length-capped ({0,8000}?) — a real PEM/cert body fits well
+  //      under this;
+  //   3. the body is *tempered* — `(?!-----(?:BEGIN|END))` forbids it from
+  //      spanning the next armor marker. Without (3), output full of
+  //      unterminated `-----BEGIN …-----` markers makes every BEGIN scan up to
+  //      8000 chars forward looking for an END that never comes (~1s on a 450KB
+  //      input); tempering makes each dead BEGIN fail after a single char, so
+  //      the rule stays linear with a tiny constant. A legitimate PEM body never
+  //      contains another armor line, so coverage (incl. encrypted DEK-Info
+  //      keys) is unaffected.
+  {
+    re: /-----BEGIN [A-Z0-9 ]{0,40}(?:PRIVATE KEY|CERTIFICATE)-----(?:(?!-----(?:BEGIN|END))[\s\S]){0,8000}?-----END [A-Z0-9 ]{0,40}(?:PRIVATE KEY|CERTIFICATE)-----/g,
+    replace: PLACEHOLDER,
+  },
+
+  // Multi-line PGP private-key blocks. Their armor label ends in " BLOCK", which
+  // the PEM/cert rule above does not cover. Same ReDoS tempering as that rule.
+  // BEGIN/END types are matched independently on purpose (keeps the pattern
+  // simple; a mismatched pair only ever over-redacts).
+  {
+    re: /-----BEGIN PGP (?:PRIVATE KEY|MESSAGE)[A-Z0-9 ]{0,20}-----(?:(?!-----(?:BEGIN|END))[\s\S]){0,8000}?-----END PGP (?:PRIVATE KEY|MESSAGE)[A-Z0-9 ]{0,20}-----/g,
+    replace: PLACEHOLDER,
+  },
+
   // JWTs: header.payload.signature, each a base64url segment. Run first so the
   // generic blob rule doesn't eat half of it.
   { re: /eyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}/g, replace: PLACEHOLDER },
@@ -64,10 +91,53 @@ const RULES: Rule[] = [
     replace: `$1$2${PLACEHOLDER}`,
   },
 
-  // Long high-entropy blobs (hex / base64url tokens). Excludes `/` so ordinary
-  // file paths (which are slash-delimited) are not swallowed. Run LAST.
-  { re: /\b[A-Za-z0-9+_-]{40,}={0,2}\b/g, replace: PLACEHOLDER },
+  // Arbitrary NAME=token in output/env dumps: any UPPER_SNAKE name assigned a
+  // long-ish opaque value. Keep the name + '='; drop the value.
+  {
+    re: /\b([A-Z][A-Z0-9_]{2,})=("[^"]*"|'[^']*'|[A-Za-z0-9+/_=-]{12,})/g,
+    replace: `$1=${PLACEHOLDER}`,
+  },
+
+  // PII — email addresses.
+  { re: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, replace: PLACEHOLDER },
+
+  // PII — IBAN: 2 country letters, 2 check digits, up to 30 alphanumerics.
+  { re: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, replace: PLACEHOLDER },
+
+  // PII — phone numbers: optional +, country/area groups, 7+ digits total with
+  // separators. Conservative leading boundary so it won't eat version strings.
+  { re: /(?<![\w.])\+?\d{1,3}[ .-]?(?:\(\d{1,4}\)[ .-]?)?\d{2,4}[ .-]\d{2,4}[ .-]?\d{2,4}\b/g, replace: PLACEHOLDER },
+
+  // PII — IPv4 dotted quad.
+  { re: /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g, replace: PLACEHOLDER },
+
+  // PII — IPv6 (incl. :: compression). Requires at least one ':' run of hex groups.
+  // Known limitation: leading-`::` addresses (e.g. `::1`, `::ffff:…`) are not
+  // matched by design — acceptable under the over-redact-on-output bias.
+  { re: /\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{0,4}\b|\b(?:[0-9a-fA-F]{1,4}:){1,7}:\b/g, replace: PLACEHOLDER },
+
+  // Long high-entropy blobs (hex / base64, incl. '/'-bearing AWS secret keys).
+  // Skip path-like strings (drive-letter or dotted segments) so file paths and
+  // dotted names survive; gate on length as a cheap entropy proxy. Run LAST.
+  {
+    re: /(?<![\w./\\:-])[A-Za-z0-9+/_=-]{40,}={0,2}(?![\w./\\-])/g,
+    replace: PLACEHOLDER,
+  },
 ];
+
+/** Sum-of-digits Luhn check used to distinguish real PANs from arbitrary digit runs. */
+function isLuhnValid(digits: string): boolean {
+  let sum = 0;
+  let dbl = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let d = digits.charCodeAt(i) - 48;
+    if (d < 0 || d > 9) return false;
+    if (dbl) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+    dbl = !dbl;
+  }
+  return sum % 10 === 0;
+}
 
 /**
  * Replace any recognized secret in `text` with `[REDACTED]`.
@@ -79,5 +149,11 @@ export function redactSecrets(text: string): string {
   for (const { re, replace } of RULES) {
     out = out.replace(re, replace);
   }
+  // Card numbers: 13–19 digit groups, but only redact when Luhn-valid so order
+  // ids and other long digit runs survive. Runs after the regex rules.
+  out = out.replace(/\b(?:\d[ -]?){12,18}\d\b/g, (m) => {
+    const digits = m.replace(/[ -]/g, "");
+    return digits.length >= 13 && digits.length <= 19 && isLuhnValid(digits) ? PLACEHOLDER : m;
+  });
   return out;
 }

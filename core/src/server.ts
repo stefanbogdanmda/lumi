@@ -1,5 +1,12 @@
 import * as http from "node:http";
 import { join } from "node:path";
+import { homedir } from "node:os";
+import { watchAiSessions, claudeAdapter, codexAdapter } from "./session/ai-monitor";
+import { isAiCaptureEnabled } from "./session/consent";
+import { loadConsent } from "./session/consent-config";
+import { writeFileSync, readFileSync as fsReadFileSync } from "node:fs";
+import { attachTerminalWebSocket } from "./terminal/ws";
+import { loadPtyBackend } from "./terminal/pty-backend";
 import { JsonFileProfile } from "./profile";
 import { JsonFileCache } from "./cache";
 import { lumiHome } from "./paths";
@@ -25,6 +32,9 @@ import { detectStuck, unstuckAdvice } from "./unstuck";
 import { currentEntitlement, verifyLicense, JsonFileLicenseStore } from "./license";
 import { isPro } from "./entitlements";
 import type { LicenseResult } from "./license";
+import { rotateFeed, purgeData } from "./retention";
+import { secureDir } from "./acl";
+import { captureStatus } from "./capture-status";
 
 export interface OverlayServerDeps {
   home?: string;
@@ -38,6 +48,10 @@ export interface OverlayServerDeps {
   source?: string;
   /** Injectable entitlement for tests — skips disk read. */
   entitlement?: LicenseResult;
+  /** Override the AI-session roots watched (default ~/.claude/projects). Tests inject a temp dir. */
+  claudeRoots?: string[];
+  /** Override the Codex roots watched (default ~/.codex/sessions). Tests inject a temp dir. */
+  codexRoots?: string[];
 }
 
 
@@ -51,6 +65,8 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown): void
 }
 
 const MAX_BODY_BYTES = 65536;
+const RETENTION_DAYS = 30;
+const RETENTION_BYTES = 50 * 1024 * 1024;
 
 /** Resolves with the body string, or rejects with "413" if over MAX_BODY_BYTES. */
 function readBody(req: http.IncomingMessage): Promise<string> {
@@ -84,6 +100,22 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
   const pollMs = deps.pollMs ?? 1000;
   const feedFile = join(home, "feed.jsonl");
 
+  // Resolve the vendored xterm asset dir once (null until @xterm/xterm is installed).
+  let xtermPkgDir: string | null = null;
+  try { xtermPkgDir = join(require.resolve("@xterm/xterm/package.json"), ".."); } catch { /* not installed yet */ }
+
+  // Resolve the xterm fit addon's UMD entry once (null until installed).
+  let fitJsPath: string | null = null;
+  try { fitJsPath = require.resolve("@xterm/addon-fit"); } catch { /* not installed yet */ }
+
+  // Harden the home dir (Windows ACL; POSIX already 0700) and bound the feed at
+  // startup. Rotation also runs hourly so a long-lived overlay stays bounded.
+  secureDir(home);
+  const rotate = () => { try { rotateFeed(feedFile, { maxAgeDays: RETENTION_DAYS, maxBytes: RETENTION_BYTES }); } catch { /* best-effort */ } };
+  rotate();
+  const rotateTimer = setInterval(rotate, 60 * 60 * 1000);
+  if (typeof rotateTimer.unref === "function") rotateTimer.unref();
+
   const generator =
     deps.generator ??
     new FallbackGenerator(new ClaudeCliGenerator(), new MockGenerator());
@@ -104,6 +136,24 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
     // Surface ingestion errors instead of silently swallowing them.
     { pollMs, onError: (e) => console.error("[lumi:terminal-watch]", e) },
   );
+
+  // AI-session monitor: tail Claude Code + Codex transcripts and teach from the
+  // assistant's prose + commands + OUTPUT. Default OFF — only runs while consent is
+  // granted (checked live each drain, so toggling consent.json pauses capture at source).
+  const claudeRoots = deps.claudeRoots ?? [join(homedir(), ".claude", "projects")];
+  const codexRoots = deps.codexRoots ?? [join(homedir(), ".codex", "sessions")];
+  const stopAiWatch = watchAiSessions({
+    sources: [
+      ...(claudeRoots.length ? [claudeAdapter(claudeRoots)] : []),
+      ...(codexRoots.length ? [codexAdapter(codexRoots)] : []),
+    ],
+    lumi,
+    isEnabled: () => isAiCaptureEnabled(home),
+    getConsent: () => loadConsent(home),
+    pollMs,
+    onEvents: (events) => { for (const e of events) appendEvent(feedFile, e); },
+    onError: (e) => console.error("[lumi:ai-watch]", e),
+  });
 
   const server = http.createServer(async (req, res) => {
     try {
@@ -130,6 +180,106 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
         if (ent.email) payload.email = ent.email;
         if (ent.expires) payload.expires = ent.expires;
         sendJson(res, 200, payload);
+        return;
+      }
+
+      // GET /api/consent — current layered consent (defaults when no file)
+      if (method === "GET" && url === "/api/consent") {
+        sendJson(res, 200, loadConsent(home));
+        return;
+      }
+
+      // GET /api/capture-status — recording indicator (same consent the watcher reads)
+      if (method === "GET" && url === "/api/capture-status") {
+        sendJson(res, 200, captureStatus(home, [
+          ...(claudeRoots.length ? [{ tool: "claude-code", roots: claudeRoots }] : []),
+          ...(codexRoots.length ? [{ tool: "codex", roots: codexRoots }] : []),
+        ]));
+        return;
+      }
+
+      // GET /api/terminal/status — is the native PTY backend available?
+      if (method === "GET" && url === "/api/terminal/status") {
+        sendJson(res, 200, { available: loadPtyBackend() !== null });
+        return;
+      }
+
+      // GET /vendor/xterm.js | /vendor/xterm.css — overlay terminal panel assets
+      if (method === "GET" && (url === "/vendor/xterm.js" || url === "/vendor/xterm.css")) {
+        if (!xtermPkgDir) { sendJson(res, 404, { error: "xterm assets unavailable" }); return; }
+        try {
+          const isCss = url.endsWith(".css");
+          const file = join(xtermPkgDir, isCss ? "css/xterm.css" : "lib/xterm.js");
+          const buf = fsReadFileSync(file);
+          res.writeHead(200, {
+            "Content-Type": isCss ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8",
+            "Content-Length": buf.length,
+            "Cache-Control": "public, max-age=86400",
+          });
+          res.end(buf);
+        } catch {
+          sendJson(res, 404, { error: "xterm assets unavailable" });
+        }
+        return;
+      }
+
+      // GET /vendor/addon-fit.js — xterm fit addon (UMD) for the terminal panel
+      if (method === "GET" && url === "/vendor/addon-fit.js") {
+        if (!fitJsPath) { sendJson(res, 404, { error: "xterm addon-fit unavailable" }); return; }
+        try {
+          const buf = fsReadFileSync(fitJsPath);
+          res.writeHead(200, { "Content-Type": "application/javascript; charset=utf-8", "Content-Length": buf.length, "Cache-Control": "public, max-age=86400" });
+          res.end(buf);
+        } catch { sendJson(res, 404, { error: "xterm addon-fit unavailable" }); }
+        return;
+      }
+
+      // POST /api/consent — overwrite consent.json (human-readable)
+      if (method === "POST" && url === "/api/consent") {
+        let parsed: unknown;
+        try {
+          const raw = await readBody(req);
+          parsed = JSON.parse(raw);
+        } catch (e) {
+          const status = (e as Error).message === "413" ? 413 : 400;
+          sendJson(res, status, { error: status === 413 ? "request entity too large" : "invalid JSON body" });
+          return;
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          sendJson(res, 400, { error: "object body required" });
+          return;
+        }
+        try {
+          writeFileSync(join(home, "consent.json"), JSON.stringify(parsed, null, 2), { encoding: "utf8", mode: 0o600 });
+          sendJson(res, 200, loadConsent(home));
+        } catch {
+          sendJson(res, 500, { error: "could not save consent" });
+        }
+        return;
+      }
+
+      // POST /api/delete-data — one-click purge of captured data. Requires a JSON
+      // body { confirm: true } so a cross-origin form-POST (CSRF) can't wipe the
+      // feed: the JSON content-type forces a preflight this server never approves.
+      if (method === "POST" && url === "/api/delete-data") {
+        try {
+          const raw = await readBody(req);
+          const parsed = JSON.parse(raw);
+          if (!parsed || parsed.confirm !== true) {
+            sendJson(res, 400, { error: "body must be { confirm: true }" });
+            return;
+          }
+        } catch (e) {
+          const status = (e as Error).message === "413" ? 413 : 400;
+          sendJson(res, status, { error: status === 413 ? "request entity too large" : "invalid JSON body" });
+          return;
+        }
+        try {
+          const removed = purgeData(home);
+          sendJson(res, 200, { ok: true, removed });
+        } catch {
+          sendJson(res, 500, { error: "could not delete data" });
+        }
         return;
       }
 
@@ -454,14 +604,30 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
 
       // 404 fallback
       sendJson(res, 404, { error: "not found" });
-    } catch {
+    } catch (e) {
+      console.error("[lumi:server] unhandled request error", e);
       try { sendJson(res, 500, { error: "server error" }); } catch {}
     }
   });
 
-  // Stop tailing terminal.jsonl when the server is closed so tests/processes
-  // don't leak the watcher + poll interval.
-  server.on("close", () => stopTerminalWatch());
+  // Lumi Terminal: a spawned-shell PTY whose output feeds the capture pipeline.
+  // Display is unconditional; capture is gated by opt-in consent inside the orchestrator.
+  const stopTerminalWs = attachTerminalWebSocket(server, {
+    lumi,
+    cwd: () => process.cwd(),
+    getConsent: () => loadConsent(home),
+    onEvents: (events) => { for (const e of events) appendEvent(feedFile, e); },
+    onError: (e) => console.error("[lumi:terminal-ws]", e),
+  });
+
+  // Stop both watchers when the server is closed so tests/processes don't
+  // leak fs.watch handles or poll intervals.
+  server.on("close", () => {
+    clearInterval(rotateTimer);
+    try { stopTerminalWatch(); } catch { /* already stopped */ }
+    try { stopAiWatch(); } catch { /* already stopped */ }
+    try { stopTerminalWs(); } catch { /* already stopped */ }
+  });
 
   return server;
 }
