@@ -171,16 +171,23 @@ export function watchAiSessions(opts: AiMonitorOptions): () => void {
     }
   };
 
+  // Node does not support fs.watch({ recursive: true }) on Linux (throws
+  // ERR_FEATURE_UNAVAILABLE_ON_PLATFORM / EINVAL). Skip native watching there
+  // and rely solely on the poll timer below, which already provides full
+  // coverage — avoids a spurious onError on every Linux startup.
+  const canWatch = process.platform !== "linux";
   const watchers: FSWatcher[] = [];
-  for (const src of opts.sources) {
-    for (const root of src.roots) {
-      if (!existsSync(root)) continue;
-      try {
-        const w = watch(root, { recursive: true }, () => { void drain(); });
-        w.on("error", (e) => opts.onError?.(e));
-        watchers.push(w);
-      } catch (e) {
-        opts.onError?.(e);
+  if (canWatch) {
+    for (const src of opts.sources) {
+      for (const root of src.roots) {
+        if (!existsSync(root)) continue;
+        try {
+          const w = watch(root, { recursive: true }, () => { void drain(); });
+          w.on("error", (e) => opts.onError?.(e));
+          watchers.push(w);
+        } catch (e) {
+          opts.onError?.(e);
+        }
       }
     }
   }

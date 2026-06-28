@@ -12,13 +12,17 @@ maybe("node-pty real backend (smoke; skipped if unavailable)", () => {
     const shell = isWin ? (process.env.COMSPEC || "cmd.exe") : "/bin/sh";
     const args = isWin ? ["/c", "echo lumi-smoke"] : ["-c", "echo lumi-smoke"];
     const s = b.spawn({ shell, args, cwd: process.cwd(), cols: 80, rows: 24 });
+    let exited = false;
     const out = await new Promise<string>((resolve) => {
       let acc = "";
       s.onData((d) => { acc += d; });
-      s.onExit(() => resolve(acc));
+      s.onExit(() => { exited = true; resolve(acc); });
       setTimeout(() => resolve(acc), 3000);
     });
-    try { s.kill(); } catch { /* already exited */ }
+    // Only kill if the shell is still alive (timeout path). Killing an
+    // already-exited shell on Windows/ConPTY forks conpty_console_list_agent.js
+    // against a dead PID, which throws "AttachConsole failed" after the suite.
+    if (!exited) { try { s.kill(); } catch { /* still cleaning up */ } }
     expect(out).toContain("lumi-smoke");
   });
 });

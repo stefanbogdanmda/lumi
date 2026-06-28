@@ -68,7 +68,7 @@ export function loadPtyBackend(): PtyBackend | null {
           onData: (cb) => { p.onData(cb); },
           onExit: (cb) => { p.onExit(({ exitCode }) => cb({ exitCode })); },
           write: (d) => p.write(d),
-          resize: (c, r) => { try { p.resize(c, r); } catch { /* ignore bad geometry */ } },
+          resize: (c, r) => { try { p.resize(c, r); } catch (e) { console.error("[lumi:pty] resize error (ignored)", e); } },
           kill: () => { try { p.kill(); } catch { /* already dead */ } },
         };
       },

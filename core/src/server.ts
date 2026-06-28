@@ -604,7 +604,8 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
 
       // 404 fallback
       sendJson(res, 404, { error: "not found" });
-    } catch {
+    } catch (e) {
+      console.error("[lumi:server] unhandled request error", e);
       try { sendJson(res, 500, { error: "server error" }); } catch {}
     }
   });

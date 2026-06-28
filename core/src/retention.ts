@@ -65,7 +65,15 @@ export function rotateFeed(file: string, opts: RotateOptions): void {
   const content = kept.map((r) => r.line).join("\n") + (kept.length ? "\n" : "");
   const tmp = file + ".tmp";
   writeFileSync(tmp, content, { encoding: "utf8", mode: 0o600 });
-  renameSync(tmp, file); // atomic on POSIX, near-atomic on Windows
+  // atomic on POSIX, near-atomic on Windows. If rename fails (e.g. EBUSY when
+  // another process holds a read handle on Windows), clean up the temp file so
+  // a stale partial .tmp isn't left on disk.
+  try {
+    renameSync(tmp, file);
+  } catch (e) {
+    try { rmSync(tmp, { force: true }); } catch { /* best-effort cleanup */ }
+    throw e;
+  }
 }
 
 /** Delete captured data under `home`. Returns the paths actually removed. */

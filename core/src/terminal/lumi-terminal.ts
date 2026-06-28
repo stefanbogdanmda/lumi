@@ -97,6 +97,12 @@ export function startLumiTerminal(opts: LumiTerminalOptions): LumiTerminalSessio
       opts.onError?.(e);
     } finally {
       flushing = false;
+      // Bytes that arrived during the async drain re-armed `pending` but their
+      // idle timer may have been cleared by this flush. Re-arm so a burst that
+      // goes quiet (e.g. a build finishing) is still captured.
+      if (pending > 0 && !stopped && !idleTimer) {
+        idleTimer = setTimeout(() => { void flush(); }, flushIdleMs);
+      }
     }
   };
 
