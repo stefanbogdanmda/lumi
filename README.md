@@ -218,6 +218,8 @@ flowchart TD
 Lumi is a UI-agnostic **`@lumi/core`** package (TypeScript/Node) plus the surfaces that render its
 lesson feed (inline plugin, web overlay, VS Code extension, CLI).
 
+**Requirements:** Node 20 or later is required to run the test suite.
+
 ```bash
 npm install
 npm test --workspace core       # run the unit tests
