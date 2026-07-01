@@ -160,6 +160,13 @@ export function createOverlayServer(deps: OverlayServerDeps = {}): http.Server {
       const url = req.url ?? "/";
       const method = req.method ?? "GET";
 
+      // GET /health — liveness probe for the desktop shell's readiness wait
+      // and future auto-update checks. Cheapest possible route: no disk, no auth.
+      if (method === "GET" && url === "/health") {
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
       // Resolve entitlement once per request (injected in tests, disk-read in production)
       const ent = deps.entitlement ?? currentEntitlement({ home });
       const pro = isPro(ent);

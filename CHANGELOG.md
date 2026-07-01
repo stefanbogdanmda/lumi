@@ -7,6 +7,12 @@ All notable changes to Lumi are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Windows desktop app — one-file install.** Lumi now ships as a single unsigned NSIS
+  installer (`Lumi-Setup.exe`): download, double-click, and the floating companion runs
+  with **no Node, Rust, or terminal required**. The engine is compiled into a self-contained
+  `lumi-serve` sidecar (via `@yao-pkg/pkg`) and framed by a Tauri window that starts it,
+  waits for `/health`, and stops it cleanly on quit. Built automatically by CI on a
+  `desktop-v*` tag. (The VS Code extension is retired in favor of this surface.)
 - **Lumi Terminal — a real terminal inside the web overlay.** A new `Terminal` tab embeds an
   xterm.js terminal served over a localhost-only `/term` WebSocket, with an optional native
   `node-pty` backend (gracefully degrades when the prebuilt binary is unavailable). Capture of

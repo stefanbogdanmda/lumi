@@ -21,13 +21,5 @@ jobs:
         run: npm test --workspace core
       - name: Build core
         run: npm run build --workspace core
-      - name: Compile extension
-        run: npm run compile --workspace vscode-extension
-      - name: Build core (for bundling)
-        run: npm run build --workspace core
-      - name: Bundle extension
-        run: npm run bundle --workspace vscode-extension
       - name: Validate plugin/marketplace manifests
         run: node -e "require('./.claude-plugin/marketplace.json'); require('./claude-plugin/.claude-plugin/plugin.json'); console.log('manifests ok')"
-      - name: Check hook script syntax
-        run: bash -n vscode-extension/hook/lumi-hook.sh
