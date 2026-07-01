@@ -28,7 +28,7 @@ fn overlay_addr() -> SocketAddr {
 }
 
 /// True if something is already listening on the overlay port. A listening
-/// socket means the Node http server is up (routes are registered synchronously
+/// socket means the sidecar's HTTP server is up (routes are registered synchronously
 /// before `listen()`), so this doubles as a readiness check — no HTTP client needed.
 fn port_is_open() -> bool {
     TcpStream::connect_timeout(&overlay_addr(), Duration::from_millis(250)).is_ok()
@@ -38,7 +38,9 @@ fn port_is_open() -> bool {
 fn spawn_sidecar(app: &tauri::AppHandle) -> Option<CommandChild> {
     match app.shell().sidecar("lumi-serve") {
         Ok(cmd) => match cmd.args(["--port", &OVERLAY_PORT.to_string()]).spawn() {
-            Ok((mut _rx, child)) => {
+            // Drop the event receiver immediately — we don't consume sidecar output.
+            // (If sidecar startup ever needs debugging, drain this instead of dropping.)
+            Ok((_, child)) => {
                 println!(
                     "[lumi-overlay] started lumi-serve sidecar --port {OVERLAY_PORT} (pid {})",
                     child.pid()
@@ -90,7 +92,7 @@ pub fn run() {
             // Only start a server if one isn't already up (avoids clashing with a
             // dev instance the user launched with `lumi serve`).
             if !port_is_open() {
-                if let Some(child) = spawn_sidecar(&app.handle()) {
+                if let Some(child) = spawn_sidecar(app.handle()) {
                     if let Ok(mut guard) = app.state::<ServerProcess>().0.lock() {
                         *guard = Some(child);
                     }
