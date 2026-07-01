@@ -26,6 +26,9 @@ export function main(argv: string[]): Server {
   }
   const server = startServer(port);
   const shutdown = (): void => {
+    // Idempotent: drop both handlers so a second signal can't re-enter close().
+    process.off("SIGTERM", shutdown);
+    process.off("SIGINT", shutdown);
     server.close(() => process.exit(0));
   };
   process.once("SIGTERM", shutdown);
