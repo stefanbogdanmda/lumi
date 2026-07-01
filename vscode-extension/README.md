@@ -1,3 +1,7 @@
+> **Deprecated (2026-07).** The VS Code extension is no longer part of the Lumi build.
+> The **desktop app** (one-file Windows installer) is the flagship surface, and the
+> `@lumi/core` CLI remains for power users. This directory is kept for reference only.
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/stefanbogdanmda/lumi/main/vscode-extension/media/lumi-ide.gif" alt="Lumi teaching a concept and flagging a leaked secret" width="640">
 </p>
