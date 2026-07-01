@@ -1084,6 +1084,25 @@ export const OVERLAY_HTML: string = `<!DOCTYPE html>
 </head>
 <body>
 
+    <div id="lumi-welcome" hidden>
+      <strong>👋 Welcome to Lumi.</strong>
+      Lumi watches your AI coding tool and teaches the concept behind each step — in plain English.
+      <span>Session watching is <em>off</em> until you turn it on.</span>
+      <button type="button" id="lumi-welcome-ok">Got it</button>
+    </div>
+    <script>
+      (function () {
+        var KEY = "lumi-welcome-dismissed";
+        var el = document.getElementById("lumi-welcome");
+        if (el && !localStorage.getItem(KEY)) { el.hidden = false; }
+        var ok = document.getElementById("lumi-welcome-ok");
+        if (ok) ok.addEventListener("click", function () {
+          try { localStorage.setItem(KEY, "1"); } catch (e) {}
+          if (el) el.hidden = true;
+        });
+      })();
+    </script>
+
 <div id="widget">
 
   <!-- Header bar -->

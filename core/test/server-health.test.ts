@@ -22,3 +22,14 @@ describe("overlay /health", () => {
     expect(await res.json()).toEqual({ ok: true });
   });
 });
+
+describe("overlay first-run welcome", () => {
+  it("GET / includes the dismissible welcome banner", async () => {
+    const home = mkdtempSync(join(tmpdir(), "lumi-welcome-"));
+    server = createOverlayServer({ home, generator: new MockGenerator(), pollMs: 1000, claudeRoots: [], codexRoots: [] });
+    const port = await listen();
+    const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+    expect(html).toContain('id="lumi-welcome"');
+    expect(html).toContain("lumi-welcome-dismissed");
+  });
+});
