@@ -34,9 +34,9 @@ You need three things installed: **Node**, **Rust**, and (on Windows) the
 **MSVC build tools**. WebView2 ships with Windows 11, so there's nothing extra to
 install there.
 
-### a) Node.js 18+
+### a) Node.js 20+
 
-You almost certainly already have this (the rest of Lumi uses it). Check:
+You almost certainly already have this (the rest of Lumi uses it; CI builds on Node 20). Check:
 
 ```bash
 node --version
@@ -129,9 +129,16 @@ bar appears once the overlay server is reachable. It is opaque (espresso
 background) so there is no see-through dead-zone, and you move/minimize/close it
 with the normal OS title bar.
 
-You do **not** need to start `lumi serve` yourself — the app does it for you (see
-"How the server starts" below). If you'd rather use the helper that also tidies up
-the server on exit:
+You do **not** need to start `lumi serve` yourself — the app spawns the bundled
+`lumi-serve` sidecar for you (see "How the server starts" below).
+
+> **Build the sidecar first.** `tauri dev` does **not** build the sidecar. If
+> `src-tauri/binaries/lumi-serve-x86_64-pc-windows-msvc.exe` is missing, the window
+> opens but the overlay never loads (the shell logs `sidecar not found` and times
+> out). Run `npm run build:sidecar` once before `npm run tauri dev`, or just use
+> `npm run dist:win` for a full packaged build.
+
+If you'd rather use the helper that also tidies up the server on exit:
 
 ```bash
 # macOS / Linux
@@ -145,14 +152,16 @@ the server on exit:
 ## 4. Package for distribution
 
 ```bash
-npm run tauri build
+npm run dist:win
 ```
 
-Installers/bundles land in `src-tauri/target/release/bundle/`. Make sure icons
-exist first (step 2 — placeholders are enough to succeed).
+This builds the sidecar (`build:sidecar`) and then runs `tauri build`, producing the
+NSIS installer at `src-tauri/target/release/bundle/nsis/Lumi_<version>_x64-setup.exe`.
+Make sure icons exist first (step 2 — placeholders are enough to succeed).
 
-> Note: the packaged app expects `lumi serve` to be available the same way it is in
-> dev. This overlay is primarily a developer/local tool; it loads `localhost:4321`.
+> The packaged installer is fully self-contained: it bundles the `lumi-serve` sidecar
+> (which has its own Node runtime baked in), so **end users need neither Node nor
+> `lumi serve` on their machine**. Everything binds `127.0.0.1` only.
 
 ---
 
@@ -161,28 +170,20 @@ exist first (step 2 — placeholders are enough to succeed).
 The native shell (`src-tauri/src/lib.rs`) handles the lifecycle so launching is
 one command:
 
-1. On launch it checks whether `127.0.0.1:4321` is already serving.
-2. If not, it starts `lumi serve --port 4321` as a child process. It prefers
-   `node <repo>/core/dist/cli-bin.js serve` (resolved relative to this crate) so
-   the child is killed cleanly; it falls back to `lumi serve` on your PATH.
-   You can override the entrypoint with the `LUMI_SERVE_JS` environment variable.
-3. It waits (up to ~15s) for the port to answer, then reveals the window.
-4. When you close the window, it kills the server it started.
+1. On launch it checks whether `127.0.0.1:4321` is already serving (so it won't
+   clash with a `lumi serve` you started yourself in dev).
+2. If not, it spawns the **bundled `lumi-serve` sidecar** via `tauri-plugin-shell`
+   (`app.shell().sidecar("lumi-serve")`) with `--port 4321`. The sidecar is a
+   self-contained executable declared as an `externalBin` in `tauri.conf.json` — no
+   system Node and no monorepo layout are required at runtime.
+3. It waits (up to ~15s) for the port to accept a connection, then reveals the window.
+4. When you close the window (or the app exits), it kills the sidecar it started —
+   `Mutex<Option<CommandChild>>` + `.take()` makes the kill idempotent, so no orphan
+   process is left behind.
 
-If for any reason the server isn't reachable yet, the window shows a "Starting
-Lumi…" screen and keeps retrying until `lumi serve` answers.
+If the server isn't reachable yet, the window shows a "Starting Lumi…" screen and
+keeps retrying until the sidecar answers.
 
-**Assumption:** `lumi serve` binds `127.0.0.1:4321` and serves the overlay UI at
-`http://localhost:4321/`. If core ever changes that port, update `OVERLAY_PORT`
-in `src-tauri/src/lib.rs`, the URL in `src/index.html`, and the scripts.
-
----
-
-## Status / honesty note
-
-The Rust shell and Tauri config in this folder were **authored without a Rust
-toolchain present and have not been compiled or run**. The JavaScript/HTML, the
-icon assets, the config, and the scripts are in place. After you install Rust
-(step 0b), `npm run tauri dev` is the single command that compiles and launches
-the overlay. If the first compile surfaces a version-specific API tweak, it will
-be a small fix in `src-tauri/src/lib.rs`.
+**Port contract:** the sidecar binds `127.0.0.1:4321` and serves the overlay UI at
+`http://localhost:4321/`. If core ever changes that port, update `OVERLAY_PORT` in
+`src-tauri/src/lib.rs`, the URL in `src/index.html`, and the scripts.

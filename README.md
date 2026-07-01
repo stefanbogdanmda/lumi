@@ -97,9 +97,13 @@ One shared lesson feed keeps every surface in sync:
   The **Terminal** tab is a real, embedded terminal (xterm.js over a localhost-only WebSocket) —
   capture of its output is consent-gated and default-OFF, and runs through Lumi's redaction
   pipeline when you opt in.
-- **VS Code side-panel** — lesson cards with **"Makes sense ✅ / Still fuzzy 🤔"** buttons, plus
-  Glossary, Review, and Explain.
+- **Desktop app** (Windows) — the flagship surface: a one-file installer that runs the web
+  overlay as a floating always-on-top companion, no Node or terminal required. See
+  [Download for Windows](#download-for-windows).
 - **CLI** — the full `lumi` command set (below).
+
+> The VS Code extension is **retired** (2026-07) in favor of the desktop app; its directory is
+> kept for reference only.
 
 ---
 
@@ -215,21 +219,21 @@ OpenCode.
 
 Lumi's core is a single UI-agnostic engine that every surface consumes through injected interfaces
 (`LessonGenerator`, `LearningProfile`, `LessonCache`) — so the same logic powers the inline plugin,
-the web overlay, the VS Code panel, and the CLI, and is fully testable offline.
+the web overlay, the desktop app, and the CLI, and is fully testable offline.
 
 ```mermaid
 flowchart TD
     Hook["AI tool hook (Claude Code, Cursor, Codex, Gemini, Copilot)"] --> Core["@lumi/core: UI-agnostic engine, zero runtime deps<br/>concept detector, lesson generator, profile, security lens"]
     Core --> Inline["Inline lesson (in the AI reply)"]
     Core --> Overlay["Web overlay (lumi serve)"]
-    Core --> VSCode["VS Code panel"]
+    Core --> Desktop["Desktop app (Windows installer → bundled lumi-serve sidecar)"]
     Core --> CLI["lumi CLI"]
 ```
 
 ## For developers
 
 Lumi is a UI-agnostic **`@lumi/core`** package (TypeScript/Node) plus the surfaces that render its
-lesson feed (inline plugin, web overlay, VS Code extension, CLI).
+lesson feed (inline plugin, web overlay, desktop app, CLI).
 
 ```bash
 npm install
