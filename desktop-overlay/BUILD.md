@@ -8,6 +8,26 @@ written to be followed top-to-bottom, even if you are not a Rust developer.
 
 ---
 
+## Two ways to get Lumi on screen
+
+- **Just use it (recommended):** download `Lumi-Setup.exe` from the latest
+  [GitHub Release](https://github.com/stefanbogdanmda/lumi/releases) and run it —
+  no Node, no Rust, no terminal. Windows may show a one-time SmartScreen warning
+  for the unsigned installer: click **More info → Run anyway**.
+- **Build it yourself (this guide):** for contributors. Requires Node, Rust, and
+  the MSVC build tools; produces the same installer via `npm run dist:win`.
+
+### Build the installer
+
+```bash
+cd desktop-overlay
+npm install
+npm run dist:win   # builds the sidecar, then the NSIS installer
+# → src-tauri/target/release/bundle/nsis/Lumi_<version>_x64-setup.exe
+```
+
+---
+
 ## 0. Prerequisites (one-time)
 
 You need three things installed: **Node**, **Rust**, and (on Windows) the

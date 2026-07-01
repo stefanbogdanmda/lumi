@@ -25,6 +25,16 @@ API key, no extra cost** — with an offline fallback so it never hard-fails.
 
 ---
 
+## Download for Windows
+
+**[⬇ Download Lumi for Windows](https://github.com/stefanbogdanmda/lumi/releases/latest)** —
+one installer, no setup. Double-click and Lumi opens as a floating companion beside your
+AI coding tool. No Node, no API key, no terminal required.
+
+> Prefer the command line? The `@lumi/core` CLI (`npx @lumi/core`) is still here for power users — see below.
+
+---
+
 ## Why Lumi is different
 
 Other tools either **write code for you** or **explain a snippet when you ask**. Lumi is the only
